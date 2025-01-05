@@ -11,12 +11,12 @@ app = Flask(__name__)
 
 # تحميل النموذج والمحولات
 def load_model():
-    model = tf.keras.models.load_model('news_classifier_model.keras')
+    model = tf.keras.models.load_model('models/news_classifier_model.keras')
     
-    with open('tokenizer.pkl', 'rb') as f:
+    with open('models/tokenizer.pkl', 'rb') as f:
         tokenizer = pickle.load(f)
     
-    with open('label_encoder.pkl', 'rb') as f:
+    with open('models/label_encoder.pkl', 'rb') as f:
         label_encoder = pickle.load(f)
     
     return model, tokenizer, label_encoder
@@ -73,7 +73,7 @@ def add_article():
         text = ' '.join(text.split())  # إزالة المسافات الزائدة
         
         # إضافة المقال إلى ملف البيانات التدريبية في سطر واحد
-        with open('train_dataset.csv', 'a', encoding='utf-8', newline='') as f:
+        with open('temp_article.csv', 'a', newline='', encoding='utf-8') as f:
             f.write(f'{category},{text}\n')
         
         return jsonify({"mesaj": "Makale başarıyla eklendi"})

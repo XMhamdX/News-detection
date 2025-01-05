@@ -2,6 +2,34 @@
 
 Bu proje, derin öğrenme kullanarak haber metinlerini kategorilere ayıran bir web uygulamasıdır.
 
+## Proje Yapısı
+
+```
+News-detection/
+├── src/                    # Ana kaynak kodları
+│   ├── flask_app.py       # Flask web uygulaması
+│   ├── model_building.py  # Model oluşturma
+│   └── train_enhanced_model.py # Model eğitimi
+├── data/                   # Veri dosyaları
+│   ├── train_dataset.csv  # Eğitim verisi
+│   ├── test_dataset.csv   # Test verisi
+│   └── temp_article.csv   # Geçici makale verisi
+├── models/                 # Eğitilmiş modeller
+│   └── news_classifier_model.keras
+├── utils/                  # Yardımcı araçlar
+│   ├── text_preprocessing.py
+│   ├── data_collection.py
+│   └── newsapi_collector.py
+├── tests/                  # Test dosyaları
+│   ├── test_articles.py
+│   └── test_model.py
+├── static/                 # Statik dosyalar
+│   ├── confusion_matrix.png
+│   └── training_history.png
+└── templates/              # HTML şablonları
+    └── index.html
+```
+
 ## Özellikler
 
 - Haber metinlerini 5 kategoriye sınıflandırma:
@@ -24,7 +52,7 @@ pip install -r requirements.txt
 
 2. Uygulamayı çalıştırın:
 ```bash
-python flask_app.py
+python src/flask_app.py
 ```
 
 3. Tarayıcınızda şu adresi açın: `http://localhost:5000`
