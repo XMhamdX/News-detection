@@ -1,3 +1,8 @@
+"""
+تحسين جمع البيانات
+هذا الملف يوفر وظائف متقدمة لجمع وتنظيف البيانات من مصادر متعددة
+"""
+
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -8,12 +13,24 @@ from datetime import datetime
 import os
 
 class NewsCollector:
+    """
+    فئة لجمع الأخبار من مصادر متعددة
+    تتضمن وظائف لجمع البيانات وتخزينها في ملف CSV
+    """
+    
     def __init__(self):
+        """
+        تهيئة جامع الأخبار
+        """
         self.ua = UserAgent()
         self.collected_data = []
         
     def get_random_headers(self):
-        """إنشاء ترويسات عشوائية لتجنب الحظر"""
+        """
+        إنشاء ترويسات عشوائية لتجنب الحظر
+        Returns:
+            dict: الترويسات العشوائية
+        """
         return {
             'User-Agent': self.ua.random,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -22,7 +39,14 @@ class NewsCollector:
         }
 
     def safe_request(self, url, retries=3):
-        """إجراء طلب آمن مع إعادة المحاولة"""
+        """
+        إجراء طلب آمن مع إعادة المحاولة
+        Args:
+            url (str): الرابط المراد الطلب منه
+            retries (int): عدد مرات إعادة المحاولة
+        Returns:
+            Response: الرد على الطلب
+        """
         for _ in range(retries):
             try:
                 response = requests.get(url, headers=self.get_random_headers(), timeout=10)
@@ -35,7 +59,9 @@ class NewsCollector:
         return None
 
     def collect_reuters(self):
-        """جمع الأخبار من موقع Reuters"""
+        """
+        جمع الأخبار من موقع Reuters
+        """
         categories = {
             'business': 'business',
             'entertainment': 'entertainment',
@@ -67,7 +93,9 @@ class NewsCollector:
                 time.sleep(random.uniform(1, 3))
 
     def collect_guardian(self):
-        """جمع الأخبار من موقع The Guardian"""
+        """
+        جمع الأخبار من موقع The Guardian
+        """
         categories = {
             'business': 'business',
             'culture': 'entertainment',
@@ -98,7 +126,9 @@ class NewsCollector:
                 time.sleep(random.uniform(1, 3))
 
     def collect_cnn(self):
-        """جمع الأخبار من موقع CNN"""
+        """
+        جمع الأخبار من موقع CNN
+        """
         categories = {
             'business': 'business',
             'entertainment': 'entertainment',
@@ -129,7 +159,9 @@ class NewsCollector:
                 time.sleep(random.uniform(1, 3))
 
     def save_data(self):
-        """حفظ البيانات المجمعة"""
+        """
+        حفظ البيانات المجمعة
+        """
         if self.collected_data:
             df = pd.DataFrame(self.collected_data)
             
@@ -146,7 +178,9 @@ class NewsCollector:
             print("لم يتم جمع أي بيانات")
 
     def collect_all(self):
-        """جمع البيانات من جميع المصادر"""
+        """
+        جمع البيانات من جميع المصادر
+        """
         print("بدء جمع البيانات...")
         
         # جمع البيانات من كل مصدر
