@@ -1,67 +1,81 @@
-import pandas as pd
+"""
+تدريب نموذج تصنيف الأخبار المحسن
+يقوم هذا السكربت بتدريب نموذج LSTM ثنائي الاتجاه لتصنيف النصوص الإخبارية
+"""
+
 import numpy as np
-from sklearn.preprocessing import LabelEncoder
+import pandas as pd
+import tensorflow as tf
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout, Bidirectional
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+import pickle
+from pathlib import Path
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import confusion_matrix, classification_report
-import pickle
-import tensorflow as tf
+from sklearn.metrics import confusion_matrix
+import sys
+import os
 
-def load_and_preprocess_data():
-    print("تحميل البيانات...")
-    train_df = pd.read_csv('train_dataset.csv')
-    test_df = pd.read_csv('test_dataset.csv')
+# تحديد المسار الأساسي للمشروع
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+def load_data():
+    """
+    تحميل وتجهيز البيانات للتدريب
+    Returns:
+        DataFrame: بيانات التدريب المجهزة
+    """
+    # قراءة ملف البيانات الرئيسي
+    train_data = pd.read_csv(BASE_DIR / 'data' / 'train_dataset.csv')
     
-    # تحديد الفئات
-    classes = sorted(train_df['category'].unique())
-    print("\nالفئات المتوفرة:", classes)
+    # إضافة المقالات الجديدة إذا وجدت
+    temp_file = BASE_DIR / 'data' / 'temp_article.csv'
+    if temp_file.exists():
+        temp_data = pd.read_csv(temp_file)
+        train_data = pd.concat([train_data, temp_data], ignore_index=True)
+        # حذف الملف المؤقت بعد الإضافة
+        temp_file.unlink()
     
-    # تحويل الفئات إلى أرقام
+    return train_data
+
+def preprocess_data(data):
+    """
+    تجهيز النصوص والفئات للتدريب
+    Args:
+        data (DataFrame): البيانات الخام
+    Returns:
+        tuple: النصوص المجهزة، الفئات المشفرة، المحول النصي، محول الفئات
+    """
+    # تجهيز النصوص
+    tokenizer = Tokenizer(num_words=10000)
+    tokenizer.fit_on_texts(data['text'])
+    sequences = tokenizer.texts_to_sequences(data['text'])
+    padded_sequences = pad_sequences(sequences, maxlen=100)
+    
+    # تشفير الفئات
     label_encoder = LabelEncoder()
-    label_encoder.fit(classes)
-    train_labels = label_encoder.transform(train_df['category'])
-    test_labels = label_encoder.transform(test_df['category'])
+    encoded_labels = label_encoder.fit_transform(data['category'])
     
-    # حفظ Label Encoder
-    with open('label_encoder.pkl', 'wb') as f:
-        pickle.dump(label_encoder, f)
-    
-    # تحويل النصوص إلى vectors
-    max_words = 10000  # حجم المفردات
-    max_len = 200      # طول النص
-    
-    tokenizer = Tokenizer(num_words=max_words)
-    tokenizer.fit_on_texts(train_df['text'])
-    
-    # حفظ Tokenizer
-    with open('tokenizer.pkl', 'wb') as f:
-        pickle.dump(tokenizer, f)
-    
-    # تحويل النصوص
-    X_train = tokenizer.texts_to_sequences(train_df['text'])
-    X_test = tokenizer.texts_to_sequences(test_df['text'])
-    
-    # Padding
-    X_train = pad_sequences(X_train, maxlen=max_len)
-    X_test = pad_sequences(X_test, maxlen=max_len)
-    
-    return X_train, X_test, train_labels, test_labels, classes
+    return padded_sequences, encoded_labels, tokenizer, label_encoder
 
-def create_model(max_words=10000, max_len=200, num_classes=5):
-    model = Sequential([
-        Embedding(max_words, 128, input_length=max_len),
-        Bidirectional(LSTM(64, return_sequences=True)),
-        Dropout(0.3),
-        Bidirectional(LSTM(32)),
-        Dropout(0.3),
-        Dense(64, activation='relu'),
-        Dropout(0.3),
-        Dense(num_classes, activation='softmax')
+def build_model(vocab_size, num_classes):
+    """
+    بناء نموذج LSTM ثنائي الاتجاه
+    Args:
+        vocab_size (int): حجم المفردات
+        num_classes (int): عدد الفئات
+    Returns:
+        Model: نموذج Keras المجهز
+    """
+    model = tf.keras.Sequential([
+        tf.keras.layers.Embedding(vocab_size, 128),
+        tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(64, return_sequences=True)),
+        tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(32)),
+        tf.keras.layers.Dense(64, activation='relu'),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(num_classes, activation='softmax')
     ])
     
     model.compile(
@@ -72,10 +86,24 @@ def create_model(max_words=10000, max_len=200, num_classes=5):
     
     return model
 
+def save_training_progress(progress):
+    """
+    حفظ تقدم التدريب في ملف
+    Args:
+        progress (float): نسبة التقدم
+    """
+    progress_file = BASE_DIR / 'training_progress.txt'
+    progress_file.write_text(str(progress))
+
 def plot_training_history(history):
+    """
+    رسم مخطط لتاريخ التدريب
+    Args:
+        history: تاريخ تدريب النموذج
+    """
     plt.figure(figsize=(12, 4))
     
-    # رسم منحنى الدقة
+    # رسم الدقة
     plt.subplot(1, 2, 1)
     plt.plot(history.history['accuracy'], label='Training Accuracy')
     plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
@@ -84,7 +112,7 @@ def plot_training_history(history):
     plt.ylabel('Accuracy')
     plt.legend()
     
-    # رسم منحنى الخسارة
+    # رسم الخسارة
     plt.subplot(1, 2, 2)
     plt.plot(history.history['loss'], label='Training Loss')
     plt.plot(history.history['val_loss'], label='Validation Loss')
@@ -94,82 +122,80 @@ def plot_training_history(history):
     plt.legend()
     
     plt.tight_layout()
-    plt.savefig('training_history.png')
+    plt.savefig(str(BASE_DIR / 'static' / 'training_history.png'))
     plt.close()
 
-def plot_confusion_matrix(y_true, y_pred, classes):
+def plot_confusion_matrix(y_true, y_pred, label_encoder):
+    """
+    رسم مصفوفة الارتباك
+    Args:
+        y_true: القيم الحقيقية
+        y_pred: التنبؤات
+        label_encoder: محول الفئات
+    """
     cm = confusion_matrix(y_true, y_pred)
     plt.figure(figsize=(10, 8))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-                xticklabels=classes, yticklabels=classes)
+                xticklabels=label_encoder.classes_,
+                yticklabels=label_encoder.classes_)
     plt.title('Confusion Matrix')
-    plt.ylabel('True Label')
-    plt.xlabel('Predicted Label')
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
     plt.tight_layout()
-    plt.savefig('confusion_matrix.png')
+    plt.savefig(str(BASE_DIR / 'static' / 'confusion_matrix.png'))
     plt.close()
 
 def main():
-    print("بدء عملية التدريب...")
+    """
+    الدالة الرئيسية لتدريب النموذج
+    """
+    print("بدء تحميل البيانات...")
+    data = load_data()
     
-    # إنشاء ملف للتقدم
-    with open('training_progress.txt', 'w', encoding='utf-8') as f:
-        f.write('0')
+    print("تجهيز البيانات...")
+    X, y, tokenizer, label_encoder = preprocess_data(data)
     
-    X_train, X_test, train_labels, test_labels, classes = load_and_preprocess_data()
+    # تقسيم البيانات
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
     
-    with open('training_progress.txt', 'w', encoding='utf-8') as f:
-        f.write('10')  # 10% بعد تحميل البيانات
-    
-    model = create_model(num_classes=len(classes))
-    
-    with open('training_progress.txt', 'w', encoding='utf-8') as f:
-        f.write('20')  # 20% بعد إنشاء النموذج
-    
-    # تكوين callbacks
-    checkpoint = ModelCheckpoint(
-        'news_classifier_model.keras',
-        monitor='val_accuracy',
-        save_best_only=True
-    )
-    
-    early_stopping = EarlyStopping(
-        monitor='val_accuracy',
-        patience=3,
-        restore_best_weights=True
-    )
-    
-    class ProgressCallback(tf.keras.callbacks.Callback):
-        def on_epoch_end(self, epoch, logs=None):
-            # حساب النسبة المئوية (20-90%)
-            progress = 20 + int((epoch + 1) / self.params['epochs'] * 70)
-            with open('training_progress.txt', 'w', encoding='utf-8') as f:
-                f.write(str(progress))
+    print("بناء النموذج...")
+    model = build_model(10000, len(np.unique(y)))
     
     # تدريب النموذج
+    print("بدء التدريب...")
+    total_epochs = 10
     history = model.fit(
-        X_train, train_labels,
-        epochs=10,
+        X_train, y_train,
+        validation_data=(X_val, y_val),
+        epochs=total_epochs,
         batch_size=32,
-        validation_split=0.2,
-        callbacks=[checkpoint, early_stopping, ProgressCallback()]
+        callbacks=[
+            tf.keras.callbacks.LambdaCallback(
+                on_epoch_end=lambda epoch, logs: save_training_progress(
+                    ((epoch + 1) / total_epochs) * 100
+                )
+            )
+        ]
     )
     
-    # تقييم النموذج
-    test_loss, test_accuracy = model.evaluate(X_test, test_labels)
-    print(f"\nدقة النموذج على بيانات الاختبار: {test_accuracy:.2f}")
+    print("حفظ النموذج والمحولات...")
+    model.save(str(BASE_DIR / 'models' / 'news_classifier_model.keras'))
     
-    # رسم النتائج
+    with open(str(BASE_DIR / 'models' / 'tokenizer.pkl'), 'wb') as f:
+        pickle.dump(tokenizer, f)
+    
+    with open(str(BASE_DIR / 'models' / 'label_encoder.pkl'), 'wb') as f:
+        pickle.dump(label_encoder, f)
+    
+    print("إنشاء الرسوم البيانية...")
     plot_training_history(history)
     
-    # رسم مصفوفة الارتباك
-    y_pred = np.argmax(model.predict(X_test), axis=1)
-    plot_confusion_matrix(test_labels, y_pred, classes)
-    
-    with open('training_progress.txt', 'w', encoding='utf-8') as f:
-        f.write('100')  # 100% عند الانتهاء
+    # إنشاء مصفوفة الارتباك
+    y_pred = np.argmax(model.predict(X_val), axis=1)
+    plot_confusion_matrix(y_val, y_pred, label_encoder)
     
     print("اكتمل التدريب!")
+    save_training_progress(100)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

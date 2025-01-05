@@ -80,8 +80,7 @@ def add_article():
         text = ' '.join(text.split())  # إزالة المسافات الزائدة
         
         # إضافة المقال إلى ملف البيانات التدريبية في سطر واحد
-        train_file = str(BASE_DIR / 'data' / 'train_dataset.csv')
-        with open(train_file, 'a', newline='', encoding='utf-8') as f:
+        with open(str(BASE_DIR / 'data' / 'temp_article.csv'), 'a', newline='', encoding='utf-8') as f:
             f.write(f'{category},{text}\n')
         
         return jsonify({"mesaj": "Makale başarıyla eklendi"})
