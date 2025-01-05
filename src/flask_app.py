@@ -6,17 +6,24 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 import subprocess
 from pathlib import Path
 import sys
+import os
 
-app = Flask(__name__)
+# تحديد المسار الأساسي للمشروع
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# إنشاء تطبيق Flask
+app = Flask(__name__, 
+    template_folder=str(BASE_DIR / 'templates'),
+    static_folder=str(BASE_DIR / 'static'))
 
 # تحميل النموذج والمحولات
 def load_model():
-    model = tf.keras.models.load_model('models/news_classifier_model.keras')
+    model = tf.keras.models.load_model(str(BASE_DIR / 'models' / 'news_classifier_model.keras'))
     
-    with open('models/tokenizer.pkl', 'rb') as f:
+    with open(str(BASE_DIR / 'models' / 'tokenizer.pkl'), 'rb') as f:
         tokenizer = pickle.load(f)
     
-    with open('models/label_encoder.pkl', 'rb') as f:
+    with open(str(BASE_DIR / 'models' / 'label_encoder.pkl'), 'rb') as f:
         label_encoder = pickle.load(f)
     
     return model, tokenizer, label_encoder
@@ -73,7 +80,8 @@ def add_article():
         text = ' '.join(text.split())  # إزالة المسافات الزائدة
         
         # إضافة المقال إلى ملف البيانات التدريبية في سطر واحد
-        with open('temp_article.csv', 'a', newline='', encoding='utf-8') as f:
+        train_file = str(BASE_DIR / 'data' / 'train_dataset.csv')
+        with open(train_file, 'a', newline='', encoding='utf-8') as f:
             f.write(f'{category},{text}\n')
         
         return jsonify({"mesaj": "Makale başarıyla eklendi"})
@@ -84,12 +92,13 @@ def add_article():
 def retrain():
     try:
         # تأكد من وجود الملف
-        progress_file = Path('training_progress.txt')
+        progress_file = BASE_DIR / 'training_progress.txt'
         if not progress_file.exists():
             progress_file.write_text('0')
         
         # تشغيل سكربت التدريب في عملية منفصلة
-        subprocess.Popen([sys.executable, 'train_enhanced_model.py'], 
+        train_script = str(BASE_DIR / 'src' / 'train_enhanced_model.py')
+        subprocess.Popen([sys.executable, train_script], 
                         creationflags=subprocess.CREATE_NEW_CONSOLE)
         
         return jsonify({"mesaj": "Model yeniden eğitimi başlatıldı"})
@@ -99,12 +108,12 @@ def retrain():
 @app.route('/get_training_progress')
 def get_training_progress():
     try:
-        progress_file = Path('training_progress.txt')
+        progress_file = BASE_DIR / 'training_progress.txt'
         if not progress_file.exists():
             return jsonify({"ilerleme": 0})
-            
+        
         progress = progress_file.read_text().strip()
-        return jsonify({"ilerleme": int(progress) if progress.isdigit() else 0})
+        return jsonify({"ilerleme": float(progress) if progress else 0})
     except Exception as e:
         return jsonify({"hata": str(e)}), 500
 
@@ -115,4 +124,4 @@ def reload_model():
     return jsonify({"mesaj": "Model başarıyla yeniden yüklendi"})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True)
