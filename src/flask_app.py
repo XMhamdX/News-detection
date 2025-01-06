@@ -54,12 +54,28 @@ def predict():
         # Sınıflandırma yap
         predictions = model.predict(padded_sequence)
         
+        # Softmax uygula
+        predictions = tf.nn.softmax(predictions).numpy()
+        
         # Tüm kategoriler için olasılıkları hesapla
         categories = label_encoder.classes_
-        probabilities = {cat: float(prob) for cat, prob in zip(categories, predictions[0])}
+        probabilities = {}
+        total_prob = 0
+        
+        # Her kategori için olasılıkları hesapla
+        for cat, prob in zip(categories, predictions[0]):
+            prob_value = float(prob)
+            probabilities[cat] = prob_value
+            total_prob += prob_value
+        
+        # Olasılıkları normalize et
+        if total_prob > 0:
+            for cat in probabilities:
+                probabilities[cat] = (probabilities[cat] / total_prob) * 100
         
         # En yüksek olasılıklı sınıfı bul
         predicted_class = max(probabilities.items(), key=lambda x: x[1])[0]
+        max_probability = probabilities[predicted_class]
         
         # Türkçe kategori isimleri
         category_names = {
@@ -72,12 +88,16 @@ def predict():
         
         # Sonuçları hazırla
         formatted_probabilities = {
-            category_names.get(cat, cat): f"%{prob * 100:.1f}"
+            category_names.get(cat, cat): f"%{prob:.1f}"
             for cat, prob in sorted(probabilities.items(), key=lambda x: x[1], reverse=True)
         }
         
+        # Güven seviyesi kategorileri
+        confidence_level = "Yüksek" if max_probability >= 70 else "Orta" if max_probability >= 40 else "Düşük"
+        
         return jsonify({
             'prediction': f'En Yüksek Olasılık: {category_names.get(predicted_class, predicted_class)}',
+            'confidence': f'Güven: {confidence_level} (%{max_probability:.1f})',
             'probabilities': formatted_probabilities
         })
         
