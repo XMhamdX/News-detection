@@ -1,6 +1,6 @@
 """
-تحسين جمع البيانات
-هذا الملف يوفر وظائف متقدمة لجمع وتنظيف البيانات من مصادر متعددة
+Veri Toplama İyileştirmesi
+Bu dosya, çeşitli kaynaklardan veri toplama ve temizleme için gelişmiş işlevler sağlar
 """
 
 import requests
@@ -14,22 +14,22 @@ import os
 
 class NewsCollector:
     """
-    فئة لجمع الأخبار من مصادر متعددة
-    تتضمن وظائف لجمع البيانات وتخزينها في ملف CSV
+    Çeşitli kaynaklardan haber toplayan sınıf
+    CSV dosyasına veri toplama ve kaydetme işlevlerini içerir
     """
     
     def __init__(self):
         """
-        تهيئة جامع الأخبار
+        Haber toplayıcı başlatma
         """
         self.ua = UserAgent()
         self.collected_data = []
         
     def get_random_headers(self):
         """
-        إنشاء ترويسات عشوائية لتجنب الحظر
+        Engellemeyi önlemek için rastgele başlıklar oluşturma
         Returns:
-            dict: الترويسات العشوائية
+            dict: Rastgele başlıklar
         """
         return {
             'User-Agent': self.ua.random,
@@ -40,12 +40,12 @@ class NewsCollector:
 
     def safe_request(self, url, retries=3):
         """
-        إجراء طلب آمن مع إعادة المحاولة
+        Yeniden deneme ile güvenli istek yapma
         Args:
-            url (str): الرابط المراد الطلب منه
-            retries (int): عدد مرات إعادة المحاولة
+            url (str): İstek yapılacak URL
+            retries (int): Yeniden deneme sayısı
         Returns:
-            Response: الرد على الطلب
+            Response: İstek yanıtı
         """
         for _ in range(retries):
             try:
@@ -54,13 +54,13 @@ class NewsCollector:
                     return response
                 time.sleep(random.uniform(1, 3))
             except Exception as e:
-                print(f"خطأ في الطلب: {e}")
+                print(f"İstek hatası: {e}")
                 time.sleep(random.uniform(2, 5))
         return None
 
     def collect_reuters(self):
         """
-        جمع الأخبار من موقع Reuters
+        Reuters sitesinden haber toplama
         """
         categories = {
             'business': 'business',
@@ -77,7 +77,7 @@ class NewsCollector:
                 soup = BeautifulSoup(response.text, 'html.parser')
                 articles = soup.find_all('article')
                 
-                for article in articles[:20]:  # نأخذ أول 20 مقال من كل فئة
+                for article in articles[:20]:  # Her kategoriden ilk 20 haberi alıyoruz
                     try:
                         title = article.find('h3').text.strip()
                         text = article.find('p').text.strip()
@@ -94,7 +94,7 @@ class NewsCollector:
 
     def collect_guardian(self):
         """
-        جمع الأخبار من موقع The Guardian
+        The Guardian sitesinden haber toplama
         """
         categories = {
             'business': 'business',
@@ -127,7 +127,7 @@ class NewsCollector:
 
     def collect_cnn(self):
         """
-        جمع الأخبار من موقع CNN
+        CNN sitesinden haber toplama
         """
         categories = {
             'business': 'business',
@@ -160,48 +160,48 @@ class NewsCollector:
 
     def save_data(self):
         """
-        حفظ البيانات المجمعة
+        Toplanan verileri kaydetme
         """
         if self.collected_data:
             df = pd.DataFrame(self.collected_data)
             
-            # إضافة البيانات الجديدة إلى الملف الموجود إذا كان موجوداً
+            # Mevcut dosyaya yeni verileri ekleme
             output_file = 'enhanced_news_dataset.csv'
             if os.path.exists(output_file):
                 existing_df = pd.read_csv(output_file)
                 df = pd.concat([existing_df, df], ignore_index=True)
             
-            # حفظ البيانات
+            # Verileri kaydetme
             df.to_csv(output_file, index=False)
-            print(f"تم حفظ {len(df)} مقال في {output_file}")
+            print(f"{len(df)} haber {output_file} dosyasına kaydedildi")
         else:
-            print("لم يتم جمع أي بيانات")
+            print("Hiçbir veri toplanmadı")
 
     def collect_all(self):
         """
-        جمع البيانات من جميع المصادر
+        Tüm kaynaklardan verileri toplama
         """
-        print("بدء جمع البيانات...")
+        print("Veri toplama işlemi başladı...")
         
-        # جمع البيانات من كل مصدر
+        # Tüm kaynaklardan verileri toplama
         collectors = [self.collect_reuters, self.collect_guardian, self.collect_cnn]
         for collector in collectors:
             try:
-                print(f"جمع البيانات من {collector.__name__}...")
+                print(f"{collector.__name__} sitesinden veri toplama...")
                 collector()
-                print(f"تم جمع {len([d for d in self.collected_data if d['source'] == collector.__name__.split('_')[1]])} مقال من {collector.__name__}")
+                print(f"{collector.__name__} sitesinden {len([d for d in self.collected_data if d['source'] == collector.__name__.split('_')[1]])} haber toplandı")
             except Exception as e:
-                print(f"خطأ في {collector.__name__}: {str(e)}")
+                print(f"{collector.__name__} sitesinden veri toplama hatası: {str(e)}")
                 import traceback
                 print(traceback.format_exc())
         
-        # طباعة إحصائيات
-        print("\nإحصائيات البيانات المجمعة:")
+        # Toplanan verilerin istatistiklerini yazdırma
+        print("\nToplanan verilerin istatistikleri:")
         sources = pd.DataFrame(self.collected_data)['source'].value_counts()
         for source, count in sources.items():
-            print(f"{source}: {count} مقال")
+            print(f"{source}: {count} haber")
         
-        # حفظ البيانات
+        # Verileri kaydetme
         self.save_data()
 
 if __name__ == "__main__":

@@ -4,55 +4,55 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
-# تحميل البيانات المطلوبة من NLTK
+# NLTK'den gerekli verileri indirme
 nltk.download('punkt')
 nltk.download('stopwords')
 
 def clean_text(text):
-    # إزالة علامات HTML
+    # HTML etiketlerini kaldırma
     text = re.sub('<[^>]*>', '', str(text))
     
-    # تحويل النص إلى أحرف صغيرة
+    # Küçük harfe dönüştürme
     text = text.lower()
     
-    # إزالة الأرقام والرموز الخاصة
+    # Özel karakterleri kaldırma
     text = re.sub('[^a-zA-z\s]', '', text)
     
-    # تقسيم النص إلى كلمات
+    # Metni kelimelere ayırma
     words = word_tokenize(text)
     
-    # إزالة الكلمات الشائعة
+    # Stop words'leri kaldırma
     stop_words = set(stopwords.words('english'))
     words = [word for word in words if word not in stop_words]
     
-    # إعادة تجميع النص
+    # Metni yeniden birleştirme
     text = ' '.join(words)
     
-    # إزالة المسافات الزائدة
+    # Fazla boşlukları kaldırma
     text = re.sub('\s+', ' ', text).strip()
     
     return text
 
 def preprocess_data():
-    print("بدء معالجة البيانات...")
+    print("Veri ön işleme başlatıldı...")
     
-    # قراءة البيانات
+    # Veri setini yükleme
     data = pd.read_csv('bbc-text.csv')
     
-    # عرض معلومات عن البيانات قبل المعالجة
-    print("\nمعلومات البيانات قبل المعالجة:")
+    # Veri seti hakkında bilgi verme
+    print("\nVeri seti hakkında bilgi:")
     print(data.info())
     
-    # تطبيق التنظيف على النصوص
-    print("\nجاري معالجة النصوص...")
+    # Metinleri temizleme
+    print("\nMetinleri temizleme...")
     data['cleaned_text'] = data['text'].apply(clean_text)
     
-    # حفظ البيانات المعالجة
+    # İşlenmiş veriyi kaydetme
     data.to_csv('cleaned_bbc_text.csv', index=False)
-    print("\nتم حفظ البيانات المعالجة في cleaned_bbc_text.csv")
+    print("\nİşlenmiş veri cleaned_bbc_text.csv olarak kaydedildi")
     
-    # عرض عينة من البيانات بعد المعالجة
-    print("\nعينة من البيانات بعد المعالجة:")
+    # İşlenmiş veri setinden örnek verme
+    print("\nİşlenmiş veri setinden örnek:")
     print(data[['category', 'cleaned_text']].head())
 
 if __name__ == "__main__":

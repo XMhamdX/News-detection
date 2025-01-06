@@ -7,28 +7,33 @@ import subprocess
 from pathlib import Path
 import sys
 import os
+import pandas as pd
 
-# تحديد المسار الأساسي للمشروع
+# Proje kök dizinini belirle
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# إنشاء تطبيق Flask
+# Flask uygulamasını oluştur
 app = Flask(__name__, 
     template_folder=str(BASE_DIR / 'templates'),
     static_folder=str(BASE_DIR / 'static'))
 
-# تحميل النموذج والمحولات
+# Model ve dönüştürücüleri yükle
 def load_model():
-    model = tf.keras.models.load_model(str(BASE_DIR / 'models' / 'news_classifier_model.keras'))
-    
-    with open(str(BASE_DIR / 'models' / 'tokenizer.pkl'), 'rb') as f:
-        tokenizer = pickle.load(f)
-    
-    with open(str(BASE_DIR / 'models' / 'label_encoder.pkl'), 'rb') as f:
-        label_encoder = pickle.load(f)
+    try:
+        model = tf.keras.models.load_model(BASE_DIR / 'models' / 'news_classifier_model.keras')
+        
+        with open(BASE_DIR / 'models' / 'tokenizer.pkl', 'rb') as f:
+            tokenizer = pickle.load(f)
+        
+        with open(BASE_DIR / 'models' / 'label_encoder.pkl', 'rb') as f:
+            label_encoder = pickle.load(f)
+    except Exception as e:
+        print(f"Model yükleme hatası: {str(e)}")
+        return None, None, None
     
     return model, tokenizer, label_encoder
 
-# تحميل النموذج عند بدء التطبيق
+# Başlangıçta modeli yükle
 model, tokenizer, label_encoder = load_model()
 
 @app.route('/')
@@ -38,89 +43,118 @@ def index():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        data = request.get_json()
-        text = data['text']
+        text = request.form.get('text')
+        if not text:
+            return jsonify({'error': 'Metin girilmedi'}), 400
         
-        # تحويل النص إلى تسلسل رقمي
+        # Metni sayısal diziye dönüştür
         sequence = tokenizer.texts_to_sequences([text])
         padded_sequence = pad_sequences(sequence, maxlen=100)
         
-        # التنبؤ بالتصنيفات
+        # Sınıflandırma yap
         predictions = model.predict(padded_sequence)
         
-        # تحويل التنبؤات إلى تصنيفات مع النسب
+        # Tüm kategoriler için olasılıkları hesapla
         categories = label_encoder.classes_
-        predictions_with_labels = [
-            {"category": cat, "probability": float(prob)}
-            for cat, prob in zip(categories, predictions[0])
-        ]
+        probabilities = {cat: float(prob) for cat, prob in zip(categories, predictions[0])}
         
-        # ترتيب التصنيفات حسب النسبة
-        predictions_with_labels.sort(key=lambda x: x['probability'], reverse=True)
+        # En yüksek olasılıklı sınıfı bul
+        predicted_class = max(probabilities.items(), key=lambda x: x[1])[0]
+        
+        # Türkçe kategori isimleri
+        category_names = {
+            'business': 'İş',
+            'entertainment': 'Eğlence',
+            'politics': 'Siyaset',
+            'sport': 'Spor',
+            'tech': 'Teknoloji'
+        }
+        
+        # Sonuçları hazırla
+        formatted_probabilities = {
+            category_names.get(cat, cat): f"%{prob * 100:.1f}"
+            for cat, prob in sorted(probabilities.items(), key=lambda x: x[1], reverse=True)
+        }
         
         return jsonify({
-            "tahmin": predictions_with_labels[0]["category"],
-            "güven": float(predictions_with_labels[0]["probability"]) * 100,
-            "tüm_olasılıklar": {pred["category"]: float(pred["probability"]) * 100 for pred in predictions_with_labels}
+            'prediction': f'En Yüksek Olasılık: {category_names.get(predicted_class, predicted_class)}',
+            'probabilities': formatted_probabilities
         })
         
     except Exception as e:
-        return jsonify({"hata": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/add_article', methods=['POST'])
 def add_article():
     try:
         data = request.get_json()
+        if not data or 'text' not in data or 'category' not in data:
+            return jsonify({'error': 'Gerekli veriler eksik'}), 400
+
         text = data['text']
         category = data['category']
         
-        # تنظيف النص: إزالة علامات السطر الجديد والفواصل
+        # Metni temizle
         text = text.replace('\n', ' ').replace('\r', ' ')
-        text = text.replace(',', ' ')  # استبدال الفواصل لتجنب مشاكل CSV
-        text = ' '.join(text.split())  # إزالة المسافات الزائدة
+        text = text.replace(',', ' ')
+        text = ' '.join(text.split())
         
-        # إضافة المقال إلى ملف البيانات التدريبية في سطر واحد
-        with open(str(BASE_DIR / 'data' / 'temp_article.csv'), 'a', newline='', encoding='utf-8') as f:
-            f.write(f'{category},{text}\n')
+        # Veri dosyasını kontrol et
+        train_file = BASE_DIR / 'data' / 'train_dataset.csv'
+        if not train_file.exists():
+            # Yeni dosya oluştur
+            pd.DataFrame(columns=['category', 'text']).to_csv(train_file, index=False)
         
-        return jsonify({"mesaj": "Makale başarıyla eklendi"})
+        # Yeni veriyi ekle
+        new_data = pd.DataFrame({'category': [category], 'text': [text]})
+        new_data.to_csv(train_file, mode='a', header=False, index=False)
+        
+        return jsonify({'message': 'Haber başarıyla eklendi'})
     except Exception as e:
-        return jsonify({"hata": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/retrain', methods=['POST'])
 def retrain():
     try:
-        # تأكد من وجود الملف
-        progress_file = BASE_DIR / 'training_progress.txt'
-        if not progress_file.exists():
-            progress_file.write_text('0')
-        
-        # تشغيل سكربت التدريب في عملية منفصلة
-        train_script = str(BASE_DIR / 'src' / 'train_enhanced_model.py')
-        subprocess.Popen([sys.executable, train_script], 
-                        creationflags=subprocess.CREATE_NEW_CONSOLE)
-        
-        return jsonify({"mesaj": "Model yeniden eğitimi başlatıldı"})
+        # Eğitim sürecini başlat
+        subprocess.Popen([sys.executable, str(BASE_DIR / 'src' / 'train_enhanced_model.py')],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE)
+        return jsonify({'message': 'Model eğitimi başlatıldı'})
     except Exception as e:
-        return jsonify({"hata": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/training_progress')
+def training_progress():
+    try:
+        progress_file = BASE_DIR / 'training_progress.txt'
+        if progress_file.exists():
+            progress = progress_file.read_text().strip()
+            return jsonify({'progress': float(progress)})
+        return jsonify({'progress': 0})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/get_training_progress')
 def get_training_progress():
     try:
         progress_file = BASE_DIR / 'training_progress.txt'
         if not progress_file.exists():
-            return jsonify({"ilerleme": 0})
+            return jsonify({'progress': 0})
         
         progress = progress_file.read_text().strip()
-        return jsonify({"ilerleme": float(progress) if progress else 0})
+        return jsonify({'progress': float(progress) if progress else 0})
     except Exception as e:
-        return jsonify({"hata": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/reload_model', methods=['POST'])
 def reload_model():
-    global model, tokenizer, label_encoder
-    model, tokenizer, label_encoder = load_model()
-    return jsonify({"mesaj": "Model başarıyla yeniden yüklendi"})
+    try:
+        global model, tokenizer, label_encoder
+        model, tokenizer, label_encoder = load_model()
+        return jsonify({'message': 'Model başarıyla yeniden yüklendi'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

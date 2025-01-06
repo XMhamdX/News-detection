@@ -9,52 +9,57 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import confusion_matrix, classification_report
+from pathlib import Path
 import pickle
 import tensorflow as tf
 
+# Proje kök dizinini belirle
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+def update_progress(progress):
+    """Eğitim ilerlemesini dosyaya yaz"""
+    progress_file = BASE_DIR / 'training_progress.txt'
+    progress_file.write_text(str(progress))
+
+class ProgressCallback(tf.keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs=None):
+        """Her epoch sonunda ilerlemeyi güncelle"""
+        total_epochs = self.params['epochs']
+        progress = ((epoch + 1) / total_epochs) * 100
+        update_progress(progress)
+
 def load_and_preprocess_data():
-    print("تحميل البيانات...")
-    train_df = pd.read_csv('train_dataset.csv')
-    test_df = pd.read_csv('test_dataset.csv')
+    """Veriyi yükle ve ön işle"""
+    # Veri setini yükle
+    train_file = BASE_DIR / 'data' / 'train_dataset.csv'
+    if not train_file.exists():
+        raise FileNotFoundError("Eğitim veri seti bulunamadı")
     
-    # تحديد الفئات
-    classes = sorted(train_df['category'].unique())
-    print("\nالفئات المتوفرة:", classes)
+    df = pd.read_csv(train_file)
     
-    # تحويل الفئات إلى أرقام
+    # Etiketleri kodla
     label_encoder = LabelEncoder()
-    label_encoder.fit(classes)
-    train_labels = label_encoder.transform(train_df['category'])
-    test_labels = label_encoder.transform(test_df['category'])
+    y = label_encoder.fit_transform(df['category'])
     
-    # حفظ Label Encoder
-    with open('label_encoder.pkl', 'wb') as f:
-        pickle.dump(label_encoder, f)
+    # Metinleri tokenize et
+    tokenizer = Tokenizer(num_words=10000)
+    tokenizer.fit_on_texts(df['text'])
+    X = tokenizer.texts_to_sequences(df['text'])
+    X = pad_sequences(X, maxlen=100)
     
-    # تحويل النصوص إلى vectors
-    max_words = 10000  # حجم المفردات
-    max_len = 200      # طول النص
-    
-    tokenizer = Tokenizer(num_words=max_words)
-    tokenizer.fit_on_texts(train_df['text'])
-    
-    # حفظ Tokenizer
-    with open('tokenizer.pkl', 'wb') as f:
+    # Model ve dönüştürücüleri kaydet
+    with open(BASE_DIR / 'models' / 'tokenizer.pkl', 'wb') as f:
         pickle.dump(tokenizer, f)
     
-    # تحويل النصوص
-    X_train = tokenizer.texts_to_sequences(train_df['text'])
-    X_test = tokenizer.texts_to_sequences(test_df['text'])
+    with open(BASE_DIR / 'models' / 'label_encoder.pkl', 'wb') as f:
+        pickle.dump(label_encoder, f)
     
-    # Padding
-    X_train = pad_sequences(X_train, maxlen=max_len)
-    X_test = pad_sequences(X_test, maxlen=max_len)
-    
-    return X_train, X_test, train_labels, test_labels, classes
+    return X, y, label_encoder.classes_
 
-def create_model(max_words=10000, max_len=200, num_classes=5):
+def create_model(vocab_size=10000, max_len=100, num_classes=5):
+    """LSTM tabanlı model oluştur"""
     model = Sequential([
-        Embedding(max_words, 128, input_length=max_len),
+        Embedding(vocab_size, 128, input_length=max_len),
         Bidirectional(LSTM(64, return_sequences=True)),
         Dropout(0.3),
         Bidirectional(LSTM(32)),
@@ -75,22 +80,22 @@ def create_model(max_words=10000, max_len=200, num_classes=5):
 def plot_training_history(history):
     plt.figure(figsize=(12, 4))
     
-    # رسم منحنى الدقة
+    # Eğitim doğruluğunu çizme
     plt.subplot(1, 2, 1)
-    plt.plot(history.history['accuracy'], label='Training Accuracy')
-    plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
-    plt.title('Model Accuracy')
+    plt.plot(history.history['accuracy'], label='Eğitim Doğruluğu')
+    plt.plot(history.history['val_accuracy'], label='Doğrulama Doğruluğu')
+    plt.title('Model Doğruluğu')
     plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
+    plt.ylabel('Doğruluk')
     plt.legend()
     
-    # رسم منحنى الخسارة
+    # Eğitim kaybını çizme
     plt.subplot(1, 2, 2)
-    plt.plot(history.history['loss'], label='Training Loss')
-    plt.plot(history.history['val_loss'], label='Validation Loss')
-    plt.title('Model Loss')
+    plt.plot(history.history['loss'], label='Eğitim Kaybı')
+    plt.plot(history.history['val_loss'], label='Doğrulama Kaybı')
+    plt.title('Model Kaybı')
     plt.xlabel('Epoch')
-    plt.ylabel('Loss')
+    plt.ylabel('Kayıp')
     plt.legend()
     
     plt.tight_layout()
@@ -102,74 +107,60 @@ def plot_confusion_matrix(y_true, y_pred, classes):
     plt.figure(figsize=(10, 8))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                 xticklabels=classes, yticklabels=classes)
-    plt.title('Confusion Matrix')
-    plt.ylabel('True Label')
-    plt.xlabel('Predicted Label')
+    plt.title('Karışıklık Matrisi')
+    plt.ylabel('Gerçek Etiket')
+    plt.xlabel('Tahmin Edilen Etiket')
     plt.tight_layout()
     plt.savefig('confusion_matrix.png')
     plt.close()
 
 def main():
-    print("بدء عملية التدريب...")
-    
-    # إنشاء ملف للتقدم
-    with open('training_progress.txt', 'w', encoding='utf-8') as f:
-        f.write('0')
-    
-    X_train, X_test, train_labels, test_labels, classes = load_and_preprocess_data()
-    
-    with open('training_progress.txt', 'w', encoding='utf-8') as f:
-        f.write('10')  # 10% بعد تحميل البيانات
-    
-    model = create_model(num_classes=len(classes))
-    
-    with open('training_progress.txt', 'w', encoding='utf-8') as f:
-        f.write('20')  # 20% بعد إنشاء النموذج
-    
-    # تكوين callbacks
-    checkpoint = ModelCheckpoint(
-        'news_classifier_model.keras',
-        monitor='val_accuracy',
-        save_best_only=True
-    )
-    
-    early_stopping = EarlyStopping(
-        monitor='val_accuracy',
-        patience=3,
-        restore_best_weights=True
-    )
-    
-    class ProgressCallback(tf.keras.callbacks.Callback):
-        def on_epoch_end(self, epoch, logs=None):
-            # حساب النسبة المئوية (20-90%)
-            progress = 20 + int((epoch + 1) / self.params['epochs'] * 70)
-            with open('training_progress.txt', 'w', encoding='utf-8') as f:
-                f.write(str(progress))
-    
-    # تدريب النموذج
-    history = model.fit(
-        X_train, train_labels,
-        epochs=10,
-        batch_size=32,
-        validation_split=0.2,
-        callbacks=[checkpoint, early_stopping, ProgressCallback()]
-    )
-    
-    # تقييم النموذج
-    test_loss, test_accuracy = model.evaluate(X_test, test_labels)
-    print(f"\nدقة النموذج على بيانات الاختبار: {test_accuracy:.2f}")
-    
-    # رسم النتائج
-    plot_training_history(history)
-    
-    # رسم مصفوفة الارتباك
-    y_pred = np.argmax(model.predict(X_test), axis=1)
-    plot_confusion_matrix(test_labels, y_pred, classes)
-    
-    with open('training_progress.txt', 'w', encoding='utf-8') as f:
-        f.write('100')  # 100% عند الانتهاء
-    
-    print("اكتمل التدريب!")
+    try:
+        # İlerlemeyi sıfırla
+        update_progress(0)
+        
+        # Veriyi yükle ve ön işle
+        X, y, classes = load_and_preprocess_data()
+        
+        # Modeli oluştur
+        model = create_model(vocab_size=10000, max_len=100, num_classes=len(classes))
+        
+        # Eğitim için callback'leri hazırla
+        callbacks = [
+            EarlyStopping(patience=3, restore_best_weights=True),
+            ModelCheckpoint(
+                str(BASE_DIR / 'models' / 'news_classifier_model.keras'),
+                save_best_only=True
+            ),
+            ProgressCallback()
+        ]
+        
+        # Modeli eğit
+        history = model.fit(
+            X, y,
+            validation_split=0.2,
+            epochs=10,
+            batch_size=32,
+            callbacks=callbacks
+        )
+        
+        # Eğitim sonuçlarını çizme
+        plot_training_history(history)
+        
+        # Modeli değerlendirme
+        test_loss, test_accuracy = model.evaluate(X, y)
+        print(f"\nModelin test doğruluğu: {test_accuracy:.2f}")
+        
+        # Karışıklık matrisini çizme
+        y_pred = np.argmax(model.predict(X), axis=1)
+        plot_confusion_matrix(y, y_pred, classes)
+        
+        # Eğitimi tamamla
+        update_progress(100)
+        
+    except Exception as e:
+        print(f"Hata: {str(e)}")
+        update_progress(-1)
 
 if __name__ == "__main__":
     main()
