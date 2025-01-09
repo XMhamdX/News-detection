@@ -1,28 +1,19 @@
 from newsapi import NewsApiClient
 import pandas as pd
-import time
 from datetime import datetime, timedelta
+import time
 
 class NewsAPICollector:
     def __init__(self, api_key):
-        """
-        NewsAPI toplayıcısını başlatma
-        Args:
-            api_key (str): NewsAPI API anahtarı
-        """
         self.api = NewsApiClient(api_key=api_key)
         self.collected_data = []
-    
+        
     def collect_news(self, category):
-        """
-        Belirli bir kategoriden haber toplama
-        Args:
-            category (str): Haber kategorisi
-        """
+        """جمع الأخبار لفئة معينة"""
         try:
-            # Son 30 günlük haberleri alma
+            # الحصول على أخبار اليوم
             end_date = datetime.now()
-            start_date = end_date - timedelta(days=30)
+            start_date = end_date - timedelta(days=30)  # آخر 30 يوم
             
             response = self.api.get_everything(
                 q=category,
@@ -32,44 +23,47 @@ class NewsAPICollector:
                 sort_by='relevancy'
             )
             
-            # Haberleri işleme
-            for article in response['articles']:
-                if article['content'] and article['description']:
+            if response['status'] == 'ok':
+                articles = response['articles']
+                for article in articles:
                     self.collected_data.append({
-                        'title': article['title'],
-                        'text': f"{article['description']} {article['content']}",
+                        'text': f"{article['title']}. {article['description']}",
                         'category': category,
-                        'source': article['source']['name'],
-                        'url': article['url'],
-                        'date': article['publishedAt']
+                        'source': article['source']['name']
                     })
-            
-            print(f"{category} kategorisinden {len(response['articles'])} haber toplandı")
-            time.sleep(1)  # API sınırlamalarını aşmamak için bekleme
+                
+                print(f"تم جمع {len(articles)} مقال من فئة {category}")
+                time.sleep(1)  # انتظار لتجنب تجاوز حد الطلبات
             
         except Exception as e:
-            print(f"Hata: {category} kategorisinden haber toplanırken bir hata oluştu - {str(e)}")
+            print(f"خطأ في جمع أخبار {category}: {str(e)}")
     
     def collect_all(self):
-        """
-        Tüm kategorilerden haber toplama
-        """
-        categories = ['business', 'entertainment', 'politics', 'sport', 'tech']
+        """جمع الأخبار من جميع الفئات"""
+        categories = ['business', 'entertainment', 'politics', 'sports', 'technology']
         
+        print("بدء جمع البيانات من NewsAPI...")
         for category in categories:
-            print(f"{category} kategorisinden haberler toplanıyor...")
             self.collect_news(category)
         
-        # Toplanan verileri DataFrame'e dönüştürme ve kaydetme
+        # حفظ البيانات
         if self.collected_data:
             df = pd.DataFrame(self.collected_data)
-            df.to_csv('newsapi_dataset.csv', index=False)
-            print(f"\nToplam {len(df)} haber toplandı ve kaydedildi")
+            output_file = 'newsapi_dataset.csv'
+            df.to_csv(output_file, index=False)
+            print(f"\nتم حفظ {len(df)} مقال في {output_file}")
+            
+            # طباعة إحصائيات
+            print("\nإحصائيات البيانات المجمعة:")
+            print("\nعدد المقالات حسب الفئة:")
+            print(df['category'].value_counts())
+            print("\nعدد المقالات حسب المصدر:")
+            print(df['source'].value_counts().head())
         else:
-            print("Hiç haber toplanamadı")
+            print("لم يتم جمع أي بيانات")
 
 if __name__ == "__main__":
-    # API anahtarını buraya ekleyin
-    api_key = '8835b0cbaeff45d3abbb74337686b12e'
-    collector = NewsAPICollector(api_key)
+    # مفتاح API من NewsAPI
+    API_KEY = '8835b0cbaeff45d3abbb74337686b12e'  
+    collector = NewsAPICollector(API_KEY)
     collector.collect_all()

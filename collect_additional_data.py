@@ -1,8 +1,30 @@
+"""
+جمع أخبار الرياضة والتكنولوجيا
+هذا الملف مسؤول عن جمع أخبار الرياضة والتكنولوجيا وإضافتها إلى مجموعة التدريب
+"""
+
 import pandas as pd
 from newsapi import NewsApiClient
 import time
+import logging
+import os
+from pathlib import Path
 
-def collect_sports_tech_news(api_key):
+# إعداد التسجيل
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+def collect_sports_tech_news():
+    """
+    جمع أخبار الرياضة والتكنولوجيا
+    يتطلب تعيين متغير البيئة NEWS_API_KEY
+    """
+    api_key = os.environ.get('NEWS_API_KEY')
+    if not api_key:
+        raise ValueError("الرجاء تعيين متغير البيئة NEWS_API_KEY")
+    
     api = NewsApiClient(api_key=api_key)
     collected_data = []
     
@@ -13,9 +35,10 @@ def collect_sports_tech_news(api_key):
     }
     
     for category, keywords in categories.items():
-        print(f"جمع أخبار {category}...")
+        logging.info(f"جمع أخبار {category}...")
         for keyword in keywords:
             try:
+                # جمع الأخبار باستخدام مفتاح API
                 response = api.get_everything(
                     q=keyword,
                     language='en',
@@ -26,36 +49,34 @@ def collect_sports_tech_news(api_key):
                 if response['status'] == 'ok':
                     for article in response['articles']:
                         if article['description'] and article['title']:
+                            # معالجة النص
                             text = f"{article['title']}. {article['description']}"
+                            text = text.replace('\n', ' ').replace('\r', ' ')
+                            text = ' '.join(text.split())  # إزالة المسافات الزائدة
+                            
                             collected_data.append({
                                 'text': text,
                                 'category': category
                             })
-                    
-                    print(f"تم جمع {len(response['articles'])} مقال لـ {keyword}")
-                    time.sleep(1)  # تأخير لتجنب تجاوز حد الطلبات
-                    
+                
+                # انتظار لتجنب تجاوز حد معدل API
+                time.sleep(1)
+                
             except Exception as e:
-                print(f"خطأ في جمع أخبار {keyword}: {str(e)}")
+                logging.error(f"خطأ في جمع الأخبار لـ {keyword}: {str(e)}")
+                continue
     
-    # تحويل البيانات إلى DataFrame
-    df = pd.DataFrame(collected_data)
-    
-    # إزالة المقالات المكررة
-    df = df.drop_duplicates(subset=['text'])
-    
-    # قراءة البيانات الحالية
-    current_df = pd.read_csv('train_dataset.csv')
-    
-    # دمج البيانات الجديدة مع القديمة
-    final_df = pd.concat([current_df, df], ignore_index=True)
-    
-    # حفظ البيانات المدمجة
-    final_df.to_csv('train_dataset.csv', index=False)
-    print(f"\nتم إضافة {len(df)} مقال جديد")
-    print("\nتوزيع الفئات الجديد:")
-    print(final_df['category'].value_counts())
+    # حفظ البيانات المجمعة
+    if collected_data:
+        df = pd.DataFrame(collected_data)
+        output_file = Path('data/additional_articles.csv')
+        output_file.parent.mkdir(exist_ok=True)
+        
+        # حفظ البيانات مع الترميز المناسب
+        df.to_csv(output_file, index=False, encoding='utf-8')
+        logging.info(f"تم حفظ {len(df)} مقال في {output_file}")
+    else:
+        logging.warning("لم يتم جمع أي بيانات")
 
 if __name__ == "__main__":
-    API_KEY = '8835b0cbaeff45d3abbb74337686b12e'  # مفتاح API الخاص بك
-    collect_sports_tech_news(API_KEY)
+    collect_sports_tech_news()

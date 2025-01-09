@@ -1,194 +1,335 @@
-# Haber Sınıflandırma Sistemi
+# Haber Sınıflandırma Sistemi (نظام تصنيف الأخبار)
 
 Bu proje, derin öğrenme kullanarak haber metinlerini kategorilere ayıran bir web uygulamasıdır.
+هذا المشروع عبارة عن تطبيق ويب يستخدم التعلم العميق لتصنيف النصوص الإخبارية إلى فئات محددة.
 
-## Proje Yapısı
+## هيكل المشروع (Proje Yapısı)
 
 ```
 News-detection/
-├── src/                    # Ana kaynak kodları
-│   ├── flask_app.py       # Flask web uygulaması
-│   ├── model_building.py  # Model oluşturma
-│   └── train_enhanced_model.py # Model eğitimi
-├── data/                   # Veri dosyaları
-│   ├── train_dataset.csv  # Eğitim verisi
-│   ├── test_dataset.csv   # Test verisi
-│   └── temp_article.csv   # Geçici makale verisi
-├── models/                 # Eğitilmiş modeller
+├── src/                    # الملفات المصدرية الرئيسية
+│   ├── flask_app.py       # تطبيق Flask للويب
+│   ├── model_building.py  # بناء النموذج
+│   └── train_enhanced_model.py # تدريب النموذج
+├── data/                   # ملفات البيانات
+│   ├── train_dataset.csv  # بيانات التدريب
+│   ├── test_dataset.csv   # بيانات الاختبار
+│   └── temp_article.csv   # المقالات المؤقتة
+├── models/                 # النماذج المدربة
 │   └── news_classifier_model.keras
-├── utils/                  # Yardımcı araçlar
+├── utils/                  # الأدوات المساعدة
 │   ├── text_preprocessing.py
 │   ├── data_collection.py
 │   └── newsapi_collector.py
-├── tests/                  # Test dosyaları
+├── tests/                  # ملفات الاختبار
 │   ├── test_articles.py
 │   └── test_model.py
-├── static/                 # Statik dosyalar
+├── static/                 # الملفات الثابتة
 │   ├── confusion_matrix.png
 │   └── training_history.png
-└── templates/              # HTML şablonları
+└── templates/              # قوالب HTML
     └── index.html
 ```
 
-## Dosyaların Detaylı Açıklaması
+## شرح تفصيلي للملفات (Dosyaların Detaylı Açıklaması)
 
-### 1. Kaynak Kodları (src/)
+### 1. الملفات المصدرية (src/)
 
 #### flask_app.py
 ```python
 """
-Ana İşlevler:
-- Flask web uygulaması
-- Kullanıcı isteklerini işleme
-- Model yükleme ve tahmin yapma
-- Yeni makale ekleme yönetimi
-- Sınıflandırma sonuçlarını görüntüleme
+الوظائف الرئيسية:
+- تطبيق الويب الرئيسي باستخدام Flask
+- معالجة طلبات المستخدم
+- تحميل النموذج وإجراء التنبؤات
+- إدارة إضافة المقالات الجديدة
+- عرض نتائج التصنيف
 """
 ```
 
 #### model_building.py
 ```python
 """
-Ana İşlevler:
-- Sinir ağı modelinin tanımlanması
-- Ağ katmanlarının ayarlanması:
-  * Embedding (128 boyut)
+الوظائف الرئيسية:
+- تعريف بنية النموذج العصبي
+- إعداد طبقات الشبكة:
+  * Embedding (128 dimensions)
   * Bidirectional LSTM
-  * Dropout katmanları
-  * Dense çıkış katmanı
-- Eğitim parametrelerinin ayarlanması
+  * Dropout layers
+  * Dense output layer
+- ضبط معلمات التدريب
 """
 ```
 
 #### train_enhanced_model.py
 ```python
 """
-Ana İşlevler:
-- Veri yükleme ve hazırlama
-- Model eğitimi
-- Model ve parametrelerin kaydedilmesi
-- Grafiklerin oluşturulması
-- Eğitim ilerlemesinin takibi
+الوظائف الرئيسية:
+- تحميل وتجهيز البيانات
+- تدريب النموذج
+- حفظ النموذج والمعلمات
+- إنشاء الرسوم البيانية
+- تتبع تقدم التدريب
 """
 ```
 
-### 2. Yardımcı Araçlar (utils/)
+### 2. الأدوات المساعدة (utils/)
 
 #### text_preprocessing.py
 ```python
 """
-Ana İşlevler:
-- Metin temizleme
-- Metin tokenizasyonu
-- Metni sayısallaştırma
-- Metin uzunluklarını standartlaştırma
+الوظائف الرئيسية:
+- تنظيف النصوص
+- تقطيع النصوص إلى كلمات
+- تحويل النصوص إلى أرقام
+- توحيد أطوال النصوص
 """
 ```
 
 #### data_collection.py
 ```python
 """
-Ana İşlevler:
-- Farklı kaynaklardan makale toplama
-- Veri temizleme ve formatlama
-- CSV'ye veri kaydetme
-- Veri kalitesi kontrolü
+الوظائف الرئيسية:
+- جمع المقالات من مصادر مختلفة
+- تنظيف وتنسيق البيانات
+- حفظ البيانات في CSV
+- التحقق من جودة البيانات
 """
 ```
 
 #### newsapi_collector.py
 ```python
 """
-Ana İşlevler:
-- NewsAPI bağlantısı
-- Kategoriye göre makale toplama
-- Veritabanı güncelleme
-- API kotası yönetimi
+الوظائف الرئيسية:
+- الاتصال بـ NewsAPI
+- جمع المقالات حسب الفئة
+- تحديث قاعدة البيانات
+- إدارة حصص API
 """
 ```
 
-## Özellikler
+### 3. ملفات البيانات (data/)
 
-- Haber metinlerini 5 kategoriye sınıflandırma:
-  - İş (Business)
-  - Eğlence (Entertainment)
-  - Siyaset (Politics)
-  - Spor (Sport)
-  - Teknoloji (Tech)
-- Gerçek zamanlı sınıflandırma
-- Yeni makaleler ekleme ve model eğitimi
-- Eğitim ilerlemesi görüntüleme
-- Web arayüzü
+#### train_dataset.csv
+- بيانات التدريب الرئيسية
+- يحتوي على عمودين:
+  * النص (text)
+  * الفئة (category)
 
-## Kullanılan Teknolojiler
+#### test_dataset.csv
+- بيانات الاختبار المنفصلة
+- نفس بنية ملف التدريب
+- يستخدم لتقييم أداء النموذج
+
+### 4. النماذج المدربة (models/)
+
+#### news_classifier_model.keras
+- النموذج المدرب
+- يحتوي على:
+  * الأوزان المدربة
+  * بنية النموذج
+  * معلمات التدريب
+
+### 5. واجهة المستخدم (templates/)
+
+#### index.html
+```html
+<!--
+المكونات الرئيسية:
+- نموذج إدخال النص
+- زر التصنيف
+- عرض النتائج
+- شريط التقدم
+- عرض الرسوم البيانية
+-->
+```
+
+### 6. ملفات إدارة البيانات والتدريب
+
+#### collect_additional_data.py
+```python
+"""
+الوظائف الرئيسية:
+- جمع بيانات إضافية من مصادر مختلفة
+- تنظيف وتنسيق البيانات الجديدة
+- إضافة البيانات إلى مجموعة التدريب
+- التحقق من جودة البيانات المضافة
+"""
+```
+
+#### download_dataset.py
+```python
+"""
+الوظائف الرئيسية:
+- تحميل مجموعات البيانات من المصادر المختلفة
+- التحقق من صحة التحميل
+- تنظيم الملفات المحملة
+- إنشاء نسخ احتياطية
+"""
+```
+
+#### enhanced_data_collection.py
+```python
+"""
+الوظائف الرئيسية:
+- تحسين عملية جمع البيانات
+- التحقق من تنوع المصادر
+- تصفية المحتوى المكرر
+- ضمان جودة البيانات
+"""
+```
+
+#### merge_datasets.py
+```python
+"""
+الوظائف الرئيسية:
+- دمج مجموعات البيانات المختلفة
+- إزالة التكرار في البيانات
+- توحيد تنسيق البيانات
+- التحقق من اتساق البيانات
+"""
+```
+
+#### split_dataset.py
+```python
+"""
+الوظائف الرئيسية:
+- تقسيم البيانات إلى تدريب واختبار
+- ضمان التوزيع المتوازن للفئات
+- خلط البيانات بشكل عشوائي
+- إنشاء ملفات منفصلة للتدريب والاختبار
+"""
+```
+
+#### update_training_data.py
+```python
+"""
+الوظائف الرئيسية:
+- تحديث بيانات التدريب بالمقالات الجديدة
+- التحقق من توازن الفئات
+- تنظيف وتحديث ملف التدريب
+- حفظ سجل التحديثات
+"""
+```
+
+### 7. ملفات التكوين والإعداد
+
+#### requirements.txt
+```
+# قائمة المكتبات المطلوبة:
+- tensorflow>=2.0.0
+- flask>=2.0.0
+- numpy>=1.19.0
+- pandas>=1.3.0
+- scikit-learn>=0.24.0
+- matplotlib>=3.3.0
+- seaborn>=0.11.0
+```
+
+#### .gitignore
+```
+# الملفات والمجلدات المتجاهلة في Git:
+- ملفات النموذج الكبيرة
+- البيانات المؤقتة
+- ملفات النظام
+- البيئات الافتراضية
+```
+
+#### training_progress.txt
+```
+# ملف تتبع تقدم التدريب:
+- يحتوي على النسبة المئوية للتقدم
+- يتم تحديثه أثناء التدريب
+- يستخدم لعرض شريط التقدم
+```
+
+### 8. ملفات المراقبة والتقييم
+
+#### news_classifier_metrics.csv
+```
+# مقاييس أداء النموذج:
+- دقة التصنيف لكل فئة
+- مصفوفة الارتباك
+- تقارير التقييم
+- سجل التحسينات
+```
+
+## المكتبات المستخدمة (Kullanılan Teknolojiler)
 
 ### 1. TensorFlow/Keras
-- Derin öğrenme framework'ü
-- Model oluşturma ve eğitim için kullanılır
-- Metin işleme için LSTM katmanları
-- Sürüm: 2.x
+- إطار عمل التعلم العميق
+- يستخدم لبناء وتدريب النموذج
+- يوفر طبقات LSTM للتعامل مع النصوص
+- الإصدار: 2.x
 
 ### 2. Flask
-- Hafif web framework'ü
-- Kullanıcı arayüzü için kullanılır
-- Model ile etkileşim için API sağlar
-- Sürüm: 2.x
+- إطار عمل ويب خفيف
+- يستخدم لبناء واجهة المستخدم
+- يوفر API للتفاعل مع النموذج
+- الإصدار: 2.x
 
 ### 3. NumPy & Pandas
-- Sayısal işlemler ve veri manipülasyonu
-- Dizi ve tablo işlemleri
-- Sürüm: 1.x
+- للعمليات الحسابية والتعامل مع البيانات
+- معالجة المصفوفات والجداول
+- الإصدار: 1.x
 
-## Sorunlar ve Çözümleri
+## المشاكل وحلولها (Sorunlar ve Çözümleri)
 
-### 1. Dosya Yolu Sorunu
-- Sorun: Dosyaların bulunamaması
-- Çözüm: Path kullanarak yol yönetimi
+### 1. مشكلة المسارات
+- المشكلة: عدم العثور على الملفات
+- الحل: استخدام Path للتعامل مع المسارات
 
-### 2. Makale Kaydetme Sorunu
-- Sorun: Makalelerin eğitime eklenememesi
-- Çözüm: Dosya yolu ve yazma işlemi düzeltmesi
+### 2. مشكلة حفظ المقالات
+- المشكلة: عدم إضافة المقالات للتدريب
+- الحل: تصحيح مسار الملف والكتابة
 
-### 3. Bellek Sorunu
-- Sorun: Yüksek bellek kullanımı
-- Çözüm: Veri işleme optimizasyonu
+### 3. مشكلة الذاكرة
+- المشكلة: استهلاك ذاكرة كبير
+- الحل: تحسين معالجة البيانات
 
-## Gelecek İyileştirmeler
+## التحسينات المستقبلية (Gelecek İyileştirmeler)
 
-1. Daha fazla dil desteği
-2. Sınıflandırma doğruluğunu artırma
-3. Yeni kategoriler ekleme
-4. Kullanıcı arayüzü geliştirmeleri
+1. دعم المزيد من اللغات
+2. تحسين دقة التصنيف
+3. إضافة تصنيفات جديدة
+4. تحسين واجهة المستخدم
 
-## Kurulum
+## التثبيت والتشغيل (Kurulum ve Çalıştırma)
 
-1. Gerekli paketleri yükleyin:
+1. تثبيت المتطلبات:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Uygulamayı çalıştırın:
+2. تشغيل التطبيق:
 ```bash
 python src/flask_app.py
 ```
 
-3. Tarayıcınızda şu adresi açın: `http://localhost:5000`
+3. فتح المتصفح على: `http://localhost:5000`
 
-## Kullanım
+## الاستخدام (Kullanım)
 
-1. Ana sayfada metin kutusuna haber metnini girin
-2. "Metni Sınıflandır" düğmesine tıklayın
-3. Sonuçları görüntüleyin
-4. Yeni makaleler eklemek için "Eğitime Ekle" düğmesini kullanın
-5. Modeli yeniden eğitmek için "Modeli Yeniden Eğit" düğmesini kullanın
+1. أدخل النص في مربع الإدخال
+2. اضغط على زر "تصنيف"
+3. شاهد النتائج
+4. يمكنك إضافة مقالات جديدة للتدريب
+5. إعادة تدريب النموذج عند الحاجة
 
-## Projeye Katkıda Bulunma
+## الفئات المدعومة (Desteklenen Kategoriler)
 
-1. Projeyi forklayın
-2. Yeni bir branch oluşturun
-3. Değişikliklerinizi yapın
-4. Pull request gönderin
+- أعمال (Business)
+- ترفيه (Entertainment)
+- سياسة (Politics)
+- رياضة (Sport)
+- تكنولوجيا (Tech)
 
-## Lisans
+## المساهمة في المشروع (Projeye Katkıda Bulunma)
 
-Bu proje MIT Lisansı altında lisanslanmıştır.
+1. انسخ المشروع (Fork)
+2. أنشئ فرعاً جديداً (Branch)
+3. قدم تعديلاتك (Pull Request)
+
+## الترخيص (Lisans)
+
+هذا المشروع مرخص تحت MIT License.
