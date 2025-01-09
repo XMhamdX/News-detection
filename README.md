@@ -3,7 +3,7 @@
 Bu proje, derin öğrenme kullanarak haber metinlerini kategorilere ayıran bir web uygulamasıdır.
 هذا المشروع عبارة عن تطبيق ويب يستخدم التعلم العميق لتصنيف النصوص الإخبارية إلى فئات محددة.
 
-## هيكل المشروع (Proje Yapısı)
+## Yapı (هيكل المشروع)
 
 ```
 News-detection/
@@ -31,7 +31,7 @@ News-detection/
     └── index.html
 ```
 
-## شرح تفصيلي للملفات (Dosyaların Detaylı Açıklaması)
+## Dosyaların Detaylı Açıklaması (شرح تفصيلي للملفات)
 
 ### 1. الملفات المصدرية (src/)
 
@@ -254,82 +254,74 @@ News-detection/
 - سجل التحسينات
 ```
 
-## المكتبات المستخدمة (Kullanılan Teknolojiler)
+## Yapay Zeka ile Haber Sınıflandırma Sistemi
 
-### 1. TensorFlow/Keras
-- إطار عمل التعلم العميق
-- يستخدم لبناء وتدريب النموذج
-- يوفر طبقات LSTM للتعامل مع النصوص
-- الإصدار: 2.x
+Bu proje, derin öğrenme kullanarak haberleri otomatik olarak kategorilere ayıran bir web uygulamasıdır.
 
-### 2. Flask
-- إطار عمل ويب خفيف
-- يستخدم لبناء واجهة المستخدم
-- يوفر API للتفاعل مع النموذج
-- الإصدار: 2.x
+## Özellikler
 
-### 3. NumPy & Pandas
-- للعمليات الحسابية والتعامل مع البيانات
-- معالجة المصفوفات والجداول
-- الإصدار: 1.x
+- 🤖 LSTM tabanlı derin öğrenme modeli
+- 📊 Çoklu kategori sınıflandırması (İş, Eğlence, Politika, Spor, Teknoloji)
+- 🌐 Çok dilli arayüz (Türkçe, Arapça, İngilizce)
+- 📈 Gerçek zamanlı model eğitimi
+- 💾 Yeni verilerle model güncelleme imkanı
 
-## المشاكل وحلولها (Sorunlar ve Çözümleri)
+## Kurulum
 
-### 1. مشكلة المسارات
-- المشكلة: عدم العثور على الملفات
-- الحل: استخدام Path للتعامل مع المسارات
-
-### 2. مشكلة حفظ المقالات
-- المشكلة: عدم إضافة المقالات للتدريب
-- الحل: تصحيح مسار الملف والكتابة
-
-### 3. مشكلة الذاكرة
-- المشكلة: استهلاك ذاكرة كبير
-- الحل: تحسين معالجة البيانات
-
-## التحسينات المستقبلية (Gelecek İyileştirmeler)
-
-1. دعم المزيد من اللغات
-2. تحسين دقة التصنيف
-3. إضافة تصنيفات جديدة
-4. تحسين واجهة المستخدم
-
-## التثبيت والتشغيل (Kurulum ve Çalıştırma)
-
-1. تثبيت المتطلبات:
+1. Gerekli paketleri yükleyin:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. تشغيل التطبيق:
+2. Veri setini indirin:
+```bash
+python download_dataset.py
+```
+
+3. Modeli eğitin:
+```bash
+python src/train_enhanced_model.py
+```
+
+4. Uygulamayı başlatın:
 ```bash
 python src/flask_app.py
 ```
 
-3. فتح المتصفح على: `http://localhost:5000`
+## Kullanım
 
-## الاستخدام (Kullanım)
+1. Web arayüzünü açın (varsayılan: http://localhost:5000)
+2. Sınıflandırmak istediğiniz haber metnini girin
+3. "Sınıflandır" butonuna tıklayın
+4. Sonuçları görüntüleyin
 
-1. أدخل النص في مربع الإدخال
-2. اضغط على زر "تصنيف"
-3. شاهد النتائج
-4. يمكنك إضافة مقالات جديدة للتدريب
-5. إعادة تدريب النموذج عند الحاجة
+## Model Eğitimi
 
-## الفئات المدعومة (Desteklenen Kategoriler)
+- "Eğitime Ekle" butonu ile yeni haberler ekleyebilirsiniz
+- "Yeniden Eğit" butonu ile modeli güncelleyebilirsiniz
+- Eğitim ilerlemesi gerçek zamanlı olarak gösterilir
 
-- أعمال (Business)
-- ترفيه (Entertainment)
-- سياسة (Politics)
-- رياضة (Sport)
-- تكنولوجيا (Tech)
+## Teknik Detaylar
 
-## المساهمة في المشروع (Projeye Katkıda Bulunma)
+- Framework: Flask
+- Model: LSTM (TensorFlow/Keras)
+- Veri İşleme: pandas, numpy
+- Metin İşleme: NLTK, scikit-learn
 
-1. انسخ المشروع (Fork)
-2. أنشئ فرعاً جديداً (Branch)
-3. قدم تعديلاتك (Pull Request)
+## Gereksinimler
 
-## الترخيص (Lisans)
+- Python 3.8+
+- TensorFlow 2.x
+- Flask
+- pandas
+- numpy
+- scikit-learn
+- NLTK
 
-هذا المشروع مرخص تحت MIT License.
+## Lisans
+
+MIT License
+
+---
+
+[English](README_EN.md) | [العربية](README_AR.md) | [Türkçe](README.md)
