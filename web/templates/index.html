@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام تصنيف الأخبار</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f1c40f;
+            --light-bg: #ecf0f1;
+            --dark-text: #2c3e50;
+            --light-text: #ffffff;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: linear-gradient(135deg, var(--light-bg) 0%, #ffffff 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--dark-text);
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .app-title {
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        .app-title:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+            border-radius: 2px;
+        }
+
+        .form-control {
+            border-radius: 15px;
+            padding: 12px 20px;
+            border: 2px solid var(--light-bg);
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-control:focus {
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+            border-color: var(--secondary-color);
+        }
+
+        .btn {
+            border-radius: 12px;
+            padding: 10px 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--secondary-color), #2980b9);
+            border: none;
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, var(--success-color), #219a52);
+            border: none;
+        }
+
+        .btn-info {
+            background: linear-gradient(45deg, #00bcd4, #0097a7);
+            border: none;
+            color: white;
+        }
+
+        .btn i {
+            margin-left: 8px;
+        }
+
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .result.success {
+            background: linear-gradient(45deg, #d4edda, #c3e6cb);
+            border: none;
+            color: #155724;
+        }
+
+        .result.error {
+            background: linear-gradient(45deg, #f8d7da, #f5c6cb);
+            border: none;
+            color: #721c24;
+        }
+
+        .category-select {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 15px;
+            background: var(--light-bg);
+            display: none;
+        }
+
+        .progress-container {
+            margin-top: 25px;
+        }
+
+        .progress {
+            height: 10px;
+            border-radius: 5px;
+            background: var(--light-bg);
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: linear-gradient(45deg, var(--secondary-color), var(--success-color));
+            transition: width 0.5s ease;
+        }
+
+        .probability-bar {
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(45deg, var(--secondary-color), var(--success-color));
+            margin-top: 5px;
+        }
+
+        .category-item {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .floating-card {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 40px;
+            height: 40px;
+            margin: 20px auto;
+            border: 4px solid var(--light-bg);
+            border-top: 4px solid var(--secondary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container floating-card">
+        <h1 class="app-title">
+            <i class="fas fa-robot"></i>
+            تصنيف الأخبار بالذكاء الاصطناعي
+        </h1>
+        
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <form id="newsForm" class="mb-4">
+                    <div class="mb-3">
+                        <label for="newsText" class="form-label">
+                            <i class="fas fa-newspaper"></i>
+                            نص الخبر
+                        </label>
+                        <textarea class="form-control" id="newsText" rows="5" required 
+                                placeholder="أدخل نص الخبر هنا..."></textarea>
+                    </div>
+                    <div class="text-center">
+                        <button type="button" class="btn btn-primary" onclick="classifyNews()">
+                            <i class="fas fa-magic"></i>
+                            تصنيف الخبر
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="showAddArticle()">
+                            <i class="fas fa-plus-circle"></i>
+                            إضافة للتدريب
+                        </button>
+                        <button type="button" class="btn btn-info" onclick="startTraining()">
+                            <i class="fas fa-sync-alt"></i>
+                            إعادة تدريب النموذج
+                        </button>
+                    </div>
+                </form>
+
+                <div class="loading-spinner" id="loadingSpinner"></div>
+                <div id="result" class="result" style="display: none;"></div>
+
+                <div id="categorySelect" class="category-select">
+                    <h3>
+                        <i class="fas fa-tags"></i>
+                        اختر الفئة
+                    </h3>
+                    <select id="category" class="form-select mb-3">
+                        <option value="business">أعمال</option>
+                        <option value="entertainment">ترفيه</option>
+                        <option value="politics">سياسة</option>
+                        <option value="sport">رياضة</option>
+                        <option value="tech">تكنولوجيا</option>
+                    </select>
+                    <button type="button" class="btn btn-success" onclick="confirmAddArticle()">
+                        <i class="fas fa-check"></i>
+                        تأكيد الإضافة
+                    </button>
+                </div>
+
+                <div id="trainingProgress" class="progress-container" style="display: none;">
+                    <h4>
+                        <i class="fas fa-graduation-cap"></i>
+                        تقدم تدريب النموذج
+                    </h4>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             style="width: 0%" 
+                             aria-valuenow="0" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        async function classifyNews() {
+            const text = document.getElementById('newsText').value;
+            if (!text) {
+                showResult('<i class="fas fa-exclamation-triangle"></i> الرجاء إدخال نص الخبر', 'error');
+                return;
+            }
+
+            // إظهار مؤشر التحميل
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    showResult(`<i class="fas fa-exclamation-circle"></i> ${data.error}`, 'error');
+                    return;
+                }
+
+                let resultText = '<div class="prediction-result">';
+                resultText += `<h4><i class="fas fa-check-circle"></i> التصنيف: ${data.tahmin}</h4>`;
+                resultText += `<p><i class="fas fa-chart-bar"></i> مستوى الثقة: ${data.güven}</p>`;
+                resultText += '<div class="mt-4"><h5>التصنيفات المحتملة:</h5>';
+                
+                for (const [category, probability] of Object.entries(data.tüm_olasılıklar)) {
+                    const probValue = parseFloat(probability);
+                    resultText += `
+                        <div class="category-item">
+                            <div class="d-flex justify-content-between">
+                                <span>${category}</span>
+                                <span>${probability}</span>
+                            </div>
+                            <div class="probability-bar" style="width: ${probValue}%"></div>
+                        </div>`;
+                }
+                resultText += '</div></div>';
+
+                showResult(resultText, 'success');
+            } catch (error) {
+                showResult('<i class="fas fa-times-circle"></i> حدث خطأ في التصنيف', 'error');
+            } finally {
+                // إخفاء مؤشر التحميل
+                document.getElementById('loadingSpinner').style.display = 'none';
+            }
+        }
+
+        function showAddArticle() {
+            document.getElementById('categorySelect').style.display = 'block';
+        }
+
+        async function confirmAddArticle() {
+            const text = document.getElementById('newsText').value;
+            const category = document.getElementById('category').value;
+            
+            if (!text) {
+                showResult('<i class="fas fa-exclamation-triangle"></i> الرجاء إدخال نص الخبر', 'error');
+                return;
+            }
+
+            document.getElementById('loadingSpinner').style.display = 'block';
+
+            try {
+                const response = await fetch('/add_article', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text, category })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    showResult(`<i class="fas fa-times-circle"></i> ${data.error}`, 'error');
+                } else {
+                    showResult('<i class="fas fa-check-circle"></i> تمت إضافة المقال بنجاح', 'success');
+                    document.getElementById('categorySelect').style.display = 'none';
+                }
+            } catch (error) {
+                showResult('<i class="fas fa-times-circle"></i> حدث خطأ في إضافة المقال', 'error');
+            } finally {
+                document.getElementById('loadingSpinner').style.display = 'none';
+            }
+        }
+
+        let trainingInterval;
+        
+        async function startTraining() {
+            try {
+                document.getElementById('loadingSpinner').style.display = 'block';
+                const response = await fetch('/retrain', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.error) {
+                    showResult(`<i class="fas fa-exclamation-circle"></i> ${data.error}`, 'error');
+                    return;
+                }
+
+                document.getElementById('trainingProgress').style.display = 'block';
+                trainingInterval = setInterval(checkTrainingProgress, 1000);
+            } catch (error) {
+                showResult('<i class="fas fa-times-circle"></i> حدث خطأ في بدء التدريب', 'error');
+            } finally {
+                document.getElementById('loadingSpinner').style.display = 'none';
+            }
+        }
+
+        async function checkTrainingProgress() {
+            try {
+                const response = await fetch('/training_progress');
+                const data = await response.json();
+                
+                const progressBar = document.querySelector('.progress-bar');
+                progressBar.style.width = `${data.progress}%`;
+                progressBar.textContent = `${data.progress}%`;
+                
+                if (data.progress === 100) {
+                    clearInterval(trainingInterval);
+                    showResult('<i class="fas fa-check-circle"></i> اكتمل تدريب النموذج بنجاح', 'success');
+                    setTimeout(() => {
+                        document.getElementById('trainingProgress').style.display = 'none';
+                    }, 3000);
+                } else if (data.progress === -1) {
+                    clearInterval(trainingInterval);
+                    showResult('<i class="fas fa-times-circle"></i> حدث خطأ أثناء تدريب النموذج', 'error');
+                    document.getElementById('trainingProgress').style.display = 'none';
+                }
+            } catch (error) {
+                clearInterval(trainingInterval);
+                showResult('<i class="fas fa-times-circle"></i> حدث خطأ في التحقق من تقدم التدريب', 'error');
+                document.getElementById('trainingProgress').style.display = 'none';
+            }
+        }
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = message;
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
