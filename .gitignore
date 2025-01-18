@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+log/
+
+# Large Model Files (to be hosted separately)
+models/bert/bert_news_classifier.pth
+models/news_classifier_model.h5
+models/news_classifier_model.keras
+
+# Large Data Files
+data/raw/
+data/processed/*.csv
+!data/processed/sample_data.csv
+
+# Allow specific model files
+models/bert/label_encoder_bert.pkl
+models/bert/bert_tokenizer/
+models/evaluation/*.png
+
+# Environment variables
+.env
+.env.*
+
+# Temporary files
+*.odt#
+.~lock.*
+.DS_Store
