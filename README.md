@@ -1,49 +1,50 @@
-# 📰 News Detection Project
+# Haber Sınıflandırma Projesi
 
-تطبيق ويب لتصنيف الأخبار باستخدام نموذج BERT المدرب على اللغة التركية.
+Bu proje, derin öğrenme kullanarak haber metinlerini kategorilere ayıran bir web uygulamasıdır.
 
-## 🚀 التثبيت
+## Kurulum
 
-يمكنك تحميل المشروع كاملاً (بما في ذلك النموذج والبيانات) من هنا:
-- [تحميل المشروع كاملاً](https://t.me/tenvsten_bot?start=60c27095)
-
-أو يمكنك تثبيت المشروع يدوياً:
-
-1. قم بتنزيل النموذج من هنا:
-   - [تحميل النموذج (BERT News Classifier)](https://t.me/tenvsten_bot?start=60c27095)
-   - ضع الملف في المسار: `models/bert/bert_news_classifier.pth`
-
-2. قم بتثبيت المتطلبات:
+Proje dosyalarını indirin ve gereksinimleri kurun:
 ```bash
 pip install -r requirements.txt
 ```
 
-3. شغل التطبيق:
+Ardından, uygulamayı çalıştırın:
 ```bash
-python web/app.py
+python src/flask_app.py
 ```
 
-## 📋 الميزات
-- تصنيف الأخبار إلى فئات: الأعمال، الترفيه، السياسة، الرياضة، التكنولوجيا
-- واجهة ويب سهلة الاستخدام
-- دعم اللغة التركية
+## Özellikler
+- Haberleri kategorilere ayırma: Ekonomi, Eğlence, Siyaset, Spor, Teknoloji
+- Kullanıcı dostu web arayüzü
+- Türkçe dil desteği
 
-## 📁 هيكل المشروع
+## Proje Yapısı
 ```
-News detection/
-├── models/
-│   ├── bert/              # نموذج BERT وملفاته
-│   └── evaluation/        # نتائج تقييم النموذج
-├── web/                   # تطبيق الويب
-│   ├── static/
-│   ├── templates/
-│   └── app.py
-├── utils/                 # أدوات مساعدة
-└── data/                  # البيانات
-    ├── raw/
-    ├── processed/
-    └── scripts/
+News-detection/
+├── src/                    # Kaynak dosyaları
+│   ├── flask_app.py       # Flask web uygulaması
+│   ├── model_building.py  # Model yapısı
+│   └── train_enhanced_model.py # Model eğitimi
+├── data/                   # Veri dosyaları
+│   ├── train_dataset.csv  # Eğitim verisi
+│   ├── test_dataset.csv   # Test verisi
+│   └── temp_article.csv   # Geçici makaleler
+├── models/                 # Eğitilmiş modeller
+│   └── news_classifier_model.keras
+├── utils/                  # Yardımcı araçlar
+│   ├── text_preprocessing.py
+│   ├── data_collection.py
+│   └── newsapi_collector.py
+├── tests/                  # Test dosyaları
+│   ├── test_articles.py
+│   └── test_model.py
+├── static/                 # Statik dosyalar
+│   ├── confusion_matrix.png
+│   └── training_history.png
+└── templates/              # HTML şablonları
+    └── index.html
 ```
 
-## 📊 النتائج
-يمكنك رؤية نتائج تقييم النموذج في مجلد `models/evaluation/`.
+## Sonuçlar
+Modelin eğitim sonuçlarını ve performans değerlendirmesini `models/evaluation/` klasöründe bulabilirsiniz.
