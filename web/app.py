@@ -1,3 +1,11 @@
+"""
+تطبيق Flask للواجهة الأمامية
+يوفر واجهة برمجة التطبيقات للتفاعل مع نموذج تصنيف الأخبار
+
+Flask ön yüz uygulaması
+Haber sınıflandırma modeli ile etkileşim için API arayüzü sağlar
+"""
+
 from flask import Flask, request, jsonify, render_template
 import torch
 from transformers import BertTokenizer
@@ -20,6 +28,13 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 def init_model():
+    """
+    تهيئة النموذج وتحميل الأوزان المدربة
+    يتم استدعاء هذه الدالة عند بدء التطبيق
+    
+    Modeli başlatır ve eğitilmiş ağırlıkları yükler
+    Bu fonksiyon uygulama başlatıldığında çağrılır
+    """
     """Model ve bileşenlerin başlatılması"""
     try:
         models_dir = project_root / 'models' / 'bert'
@@ -57,10 +72,24 @@ model, tokenizer, label_encoder, device = init_model()
 
 @app.route('/')
 def home():
+    """
+    الصفحة الرئيسية للتطبيق
+    تعرض واجهة المستخدم لإدخال النص
+    
+    Uygulamanın ana sayfası
+    Metin girişi için kullanıcı arayüzünü gösterir
+    """
     return render_template('simple.html')
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    """
+    نقطة نهاية API للتنبؤ
+    تستقبل النص وتعيد التصنيف المتوقع
+    
+    Tahmin için API uç noktası
+    Metni alır ve tahmini sınıflandırmayı döndürür
+    """
     try:
         text = request.json.get('text')
         if not text:

@@ -1,82 +1,66 @@
 """
-جمع أخبار الرياضة والتكنولوجيا
-هذا الملف مسؤول عن جمع أخبار الرياضة والتكنولوجيا وإضافتها إلى مجموعة التدريب
+BBC News'den ek haber verilerini toplama
+Bu dosya, BBC News'den haberleri toplamak ve bunları kategorilerine göre sınıflandırmakla sorumludur.
 """
 
+import requests
+from bs4 import BeautifulSoup
 import pandas as pd
-from newsapi import NewsApiClient
-import time
+from datetime import datetime
 import logging
-import os
-from pathlib import Path
 
-# إعداد التسجيل
+# Günlük kaydı yapılandırması
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-def collect_sports_tech_news():
+def collect_bbc_news():
     """
-    جمع أخبار الرياضة والتكنولوجيا
-    يتطلب تعيين متغير البيئة NEWS_API_KEY
+    BBC News'den haberleri topla ve kategorilerine göre sınıflandır
+    Bu fonksiyon, BBC News'den haberleri toplar ve bunları kategorilerine göre sınıflandırır.
     """
-    api_key = os.environ.get('NEWS_API_KEY')
-    if not api_key:
-        raise ValueError("الرجاء تعيين متغير البيئة NEWS_API_KEY")
-    
-    api = NewsApiClient(api_key=api_key)
-    collected_data = []
-    
-    # تجميع أخبار الرياضة والتقنية
     categories = {
-        'sports': ['sports', 'football', 'basketball', 'tennis'],
-        'technology': ['technology', 'tech', 'artificial intelligence', 'software']
+        'business': 'https://www.bbc.com/news/business',
+        'technology': 'https://www.bbc.com/news/technology',
+        'entertainment': 'https://www.bbc.com/news/entertainment_and_arts',
+        'sport': 'https://www.bbc.com/sport',
+        'politics': 'https://www.bbc.com/news/politics'
     }
     
-    for category, keywords in categories.items():
-        logging.info(f"جمع أخبار {category}...")
-        for keyword in keywords:
-            try:
-                # جمع الأخبار باستخدام مفتاح API
-                response = api.get_everything(
-                    q=keyword,
-                    language='en',
-                    sort_by='relevancy',
-                    page_size=25  # 25 مقال لكل كلمة مفتاحية
-                )
-                
-                if response['status'] == 'ok':
-                    for article in response['articles']:
-                        if article['description'] and article['title']:
-                            # معالجة النص
-                            text = f"{article['title']}. {article['description']}"
-                            text = text.replace('\n', ' ').replace('\r', ' ')
-                            text = ' '.join(text.split())  # إزالة المسافات الزائدة
-                            
-                            collected_data.append({
-                                'text': text,
-                                'category': category
-                            })
-                
-                # انتظار لتجنب تجاوز حد معدل API
-                time.sleep(1)
-                
-            except Exception as e:
-                logging.error(f"خطأ في جمع الأخبار لـ {keyword}: {str(e)}")
-                continue
+    collected_data = []
     
-    # حفظ البيانات المجمعة
-    if collected_data:
-        df = pd.DataFrame(collected_data)
-        output_file = Path('data/additional_articles.csv')
-        output_file.parent.mkdir(exist_ok=True)
+    for category, url in categories.items():
+        logging.info(f"{category} kategorisinden haberler toplanıyor...")
+        try:
+            response = requests.get(url)
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # Haber başlıklarını ve metinlerini topla
+            articles = soup.find_all('article')
+            for article in articles:
+                title = article.find('h3')
+                if title:
+                    title_text = title.text.strip()
+                    collected_data.append({
+                        'text': title_text,
+                        'category': category,
+                        'source': 'BBC News',
+                        'date_collected': datetime.now().strftime('%Y-%m-%d')
+                    })
         
-        # حفظ البيانات مع الترميز المناسب
-        df.to_csv(output_file, index=False, encoding='utf-8')
-        logging.info(f"تم حفظ {len(df)} مقال في {output_file}")
-    else:
-        logging.warning("لم يتم جمع أي بيانات")
+        except Exception as e:
+            logging.error(f"{category} toplanırken hata: {str(e)}")
+    
+    # Verileri DataFrame'e dönüştür
+    df = pd.DataFrame(collected_data)
+    
+    # Verileri kaydet
+    output_file = f'data/raw/bbc_news_{datetime.now().strftime("%Y%m%d")}.csv'
+    df.to_csv(output_file, index=False)
+    logging.info(f"Veriler kaydedildi: {output_file}")
+    
+    return df
 
 if __name__ == "__main__":
-    collect_sports_tech_news()
+    collect_bbc_news()

@@ -1,25 +1,33 @@
+"""
+Veri setlerini birleştirme işlemi
+Farklı kaynaklardan toplanan haber verilerini tek bir veri setinde birleştirir
+"""
+
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 
 def merge_datasets():
-    print("بدء دمج مجموعات البيانات...")
+    """
+    Farklı kaynaklardan gelen veri setlerini birleştir
+    """
+    print("Veri setlerini birleştirme işlemi başlıyor...")
     
-    # قراءة البيانات القديمة (BBC dataset)
-    print("قراءة البيانات القديمة...")
+    # Eski verileri oku (BBC veri seti)
+    print("Eski verileri okuma...")
     bbc_df = pd.read_csv('bbc-text.csv')
-    print(f"عدد المقالات في مجموعة BBC: {len(bbc_df)}")
+    print(f"BBC veri setindeki haber sayısı: {len(bbc_df)}")
     
-    # قراءة البيانات الجديدة (NewsAPI dataset)
-    print("\nقراءة البيانات الجديدة...")
+    # Yeni verileri oku (NewsAPI veri seti)
+    print("\nYeni verileri okuma...")
     newsapi_df = pd.read_csv('newsapi_dataset.csv')
-    print(f"عدد المقالات في مجموعة NewsAPI: {len(newsapi_df)}")
+    print(f"NewsAPI veri setindeki haber sayısı: {len(newsapi_df)}")
     
-    # توحيد أسماء الأعمدة
+    # Sütun isimlerini birleştir
     bbc_df.columns = ['text', 'category']
     newsapi_df = newsapi_df[['text', 'category']]
     
-    # توحيد تسميات الفئات
+    # Kategori isimlerini birleştir
     category_mapping = {
         'tech': 'technology',
         'entertainment': 'entertainment',
@@ -31,33 +39,33 @@ def merge_datasets():
     bbc_df['category'] = bbc_df['category'].map(category_mapping)
     newsapi_df['category'] = newsapi_df['category'].map(category_mapping)
     
-    # دمج البيانات
+    # Veri setlerini birleştir
     merged_df = pd.concat([bbc_df, newsapi_df], ignore_index=True)
     
-    # حذف الصفوف التي تحتوي على قيم مفقودة
+    # Eksik verileri kaldır
     initial_len = len(merged_df)
     merged_df = merged_df.dropna()
     if initial_len != len(merged_df):
-        print(f"\nتم حذف {initial_len - len(merged_df)} صف يحتوي على قيم مفقودة")
+        print(f"\n{initial_len - len(merged_df)} eksik veri kaldırıldı")
     
-    # حذف المقالات المكررة
+    # Tekrar eden haberleri kaldır
     initial_len = len(merged_df)
     merged_df = merged_df.drop_duplicates(subset=['text'])
     if initial_len != len(merged_df):
-        print(f"تم حذف {initial_len - len(merged_df)} مقال مكرر")
+        print(f"{initial_len - len(merged_df)} tekrar eden haber kaldırıldı")
     
-    print(f"\nإجمالي عدد المقالات بعد الدمج: {len(merged_df)}")
+    print(f"\nBirleştirilmiş veri setindeki haber sayısı: {len(merged_df)}")
     
-    # إحصائيات الفئات
-    print("\nتوزيع المقالات حسب الفئة:")
+    # Kategorilere göre dağılım
+    print("\nKategorilere göre dağılım:")
     print(merged_df['category'].value_counts())
     
-    # حفظ البيانات المدمجة
+    # Birleştirilmiş veriyi kaydet
     output_file = 'merged_dataset.csv'
     merged_df.to_csv(output_file, index=False)
-    print(f"\nتم حفظ البيانات المدمجة في {output_file}")
+    print(f"\nBirleştirilmiş veri {output_file} dosyasına kaydedildi")
     
-    # تقسيم البيانات إلى تدريب واختبار
+    # Verileri eğitim ve test setlerine ayır
     train_df, test_df = train_test_split(
         merged_df, 
         test_size=0.2, 
@@ -65,11 +73,11 @@ def merge_datasets():
         stratify=merged_df['category']
     )
     
-    # حفظ مجموعتي التدريب والاختبار
+    # Eğitim ve test setlerini kaydet
     train_df.to_csv('train_dataset.csv', index=False)
     test_df.to_csv('test_dataset.csv', index=False)
-    print(f"\nتم حفظ بيانات التدريب ({len(train_df)} مقال) في train_dataset.csv")
-    print(f"تم حفظ بيانات الاختبار ({len(test_df)} مقال) في test_dataset.csv")
+    print(f"\nEğitim seti ({len(train_df)} haber) train_dataset.csv dosyasına kaydedildi")
+    print(f"Test seti ({len(test_df)} haber) test_dataset.csv dosyasına kaydedildi")
     
     return merged_df
 

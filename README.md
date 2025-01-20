@@ -6,27 +6,51 @@ Bu proje, derin öğrenme kullanarak haber metinlerini kategorilere ayıran bir 
 
 ```
 News-detection/
-├── src/                    # Ana kaynak dosyaları
-│   ├── __pycache__/       # Python önbellek dosyaları
-│   ├── bert_model.py      # BERT model tanımı
-│   ├── check_gpu.py       # GPU kontrolü
-│   ├── confusion_matrix1.png  # Model karışıklık matrisi
-│   ├── flask_app_bert.py  # Ana Flask uygulaması
-│   ├── flask_app.py       # Eski uygulama sürümü
-│   ├── model_building.py  # Model oluşturma ve eğitimi
-│   ├── simple_app.py      # Basitleştirilmiş uygulama
-│   ├── train_enhanced_model.py # Geliştirilmiş model eğitimi
-│   └── training_history.png    # Eğitim geçmişi grafiği
+├── data/                   # Data directory
+│   └── processed/         
+│       ├── raw/           # Raw data files
+│       └── scripts/       # Data processing scripts
+│           ├── collect_additional_data.py
+│           ├── collect_turkish_news.py
+│           ├── enhanced_data_collection.py
+│           ├── merge_datasets.py
+│           ├── split_dataset.py
+│           └── update_training_data.py
 │
-├── templates/              # HTML şablonları
-│   ├── index.html         # Ana arayüz şablonu
-│   └── simple.html        # Basit arayüz şablonu
+├── models/                 # Model files
+│   ├── bert/              # BERT model implementation
+│   │   └── bert_model.py
+│   ├── evaluation/        # Model evaluation
+│   ├── label_encoder.pkl  # Label encoder
+│   └── tokenizer.pkl      # Tokenizer
 │
-├── static/                 # Statik dosyalar
-│   ├── confusion_matrix.png
-│   └── training_history.png
-└── models/                 # Eğitilmiş modeller
-    └── news_classifier_model.keras
+├── report_generator/       # Report generation
+│   ├── ieee_report_generator.py
+│   └── requirements.txt
+│
+├── src/                   # Source code
+│   └── train_enhanced_model.py
+│
+├── tests/                 # Test files
+│   ├── test_bert_api.py
+│   ├── test_bert_diverse.py
+│   ├── test_model.py
+│   ├── test_model_directly.py
+│   └── test_request.py
+│
+├── utils/                 # Utility functions
+│   ├── data_collection.py
+│   ├── newsapi_collector.py
+│   └── text_preprocessing.py
+│
+├── web/                   # Web application
+│   ├── app.py
+│   └── templates/
+│       ├── index.html
+│       └── simple.html
+│
+├── requirements.txt       # Project dependencies
+└── CHANGELOG.md          # Project changes log
 ```
 
 ## Dosyaların Detaylı Açıklaması

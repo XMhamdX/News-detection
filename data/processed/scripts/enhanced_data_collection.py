@@ -1,6 +1,6 @@
 """
-تحسين جمع البيانات
-هذا الملف يوفر وظائف متقدمة لجمع وتنظيف البيانات من مصادر متعددة
+Gelişmiş veri toplama işlemi
+Bu dosya, çeşitli kaynaklardan veri toplamak ve temizlemek için gelişmiş işlevler sağlar
 """
 
 import requests
@@ -12,57 +12,57 @@ import random
 from datetime import datetime
 import os
 
-class NewsCollector:
+class HaberToplayıcı:
     """
-    فئة لجمع الأخبار من مصادر متعددة
-    تتضمن وظائف لجمع البيانات وتخزينها في ملف CSV
+    Haberleri çeşitli kaynaklardan toplamak için sınıf
+    Verileri toplamak ve CSV dosyasına kaydetmek için işlevler içerir
     """
     
     def __init__(self):
         """
-        تهيئة جامع الأخبار
+        Haber toplayıcıyı başlat
         """
         self.ua = UserAgent()
-        self.collected_data = []
+        self.toplanan_veriler = []
         
-    def get_random_headers(self):
+    def rastgele_başlıklar_oluştur(self):
         """
-        إنشاء ترويسات عشوائية لتجنب الحظر
+        Yasaklanmayı önlemek için rastgele başlıklar oluştur
         Returns:
-            dict: الترويسات العشوائية
+            dict: Rastgele başlıklar
         """
         return {
             'User-Agent': self.ua.random,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Language': 'tr-TR,tr;q=0.5',
             'Connection': 'keep-alive',
         }
 
-    def safe_request(self, url, retries=3):
+    def güvenli_istek(self, url, yeniden_dene=3):
         """
-        إجراء طلب آمن مع إعادة المحاولة
+        Güvenli istek ile verileri toplamak
         Args:
-            url (str): الرابط المراد الطلب منه
-            retries (int): عدد مرات إعادة المحاولة
+            url (str): İstek yapılacak URL
+            yeniden_dene (int): Yeniden deneme sayısı
         Returns:
-            Response: الرد على الطلب
+            Response: İstek cevabı
         """
-        for _ in range(retries):
+        for _ in range(yeniden_dene):
             try:
-                response = requests.get(url, headers=self.get_random_headers(), timeout=10)
+                response = requests.get(url, headers=self.rastgele_başlıklar_oluştur(), timeout=10)
                 if response.status_code == 200:
                     return response
                 time.sleep(random.uniform(1, 3))
             except Exception as e:
-                print(f"خطأ في الطلب: {e}")
+                print(f"İstek hatası: {e}")
                 time.sleep(random.uniform(2, 5))
         return None
 
-    def collect_reuters(self):
+    def reuters_haberleri_topla(self):
         """
-        جمع الأخبار من موقع Reuters
+        Reuters haberleri toplamak
         """
-        categories = {
+        kategoriler = {
             'business': 'business',
             'entertainment': 'entertainment',
             'politics': 'politics',
@@ -70,33 +70,33 @@ class NewsCollector:
             'technology': 'tech'
         }
         
-        for category, label in categories.items():
-            url = f'https://www.reuters.com/{category}'
-            response = self.safe_request(url)
+        for kategori, etiket in kategoriler.items():
+            url = f'https://www.reuters.com/{kategori}'
+            response = self.güvenli_istek(url)
             if response:
                 soup = BeautifulSoup(response.text, 'html.parser')
-                articles = soup.find_all('article')
+                haberler = soup.find_all('article')
                 
-                for article in articles[:20]:  # نأخذ أول 20 مقال من كل فئة
+                for haber in haberler[:20]:  # Her kategoriden ilk 20 haberi al
                     try:
-                        title = article.find('h3').text.strip()
-                        text = article.find('p').text.strip()
-                        if title and text:
-                            self.collected_data.append({
-                                'text': f"{title}. {text}",
-                                'category': label,
-                                'source': 'reuters'
+                        başlık = haber.find('h3').text.strip()
+                        metin = haber.find('p').text.strip()
+                        if başlık and metin:
+                            self.toplanan_veriler.append({
+                                'text': f"{başlık}. {metin}",
+                                'kategori': etiket,
+                                'kaynak': 'reuters'
                             })
                     except:
                         continue
                     
                 time.sleep(random.uniform(1, 3))
 
-    def collect_guardian(self):
+    def guardian_haberleri_topla(self):
         """
-        جمع الأخبار من موقع The Guardian
+        The Guardian haberleri toplamak
         """
-        categories = {
+        kategoriler = {
             'business': 'business',
             'culture': 'entertainment',
             'politics': 'politics',
@@ -104,32 +104,32 @@ class NewsCollector:
             'technology': 'tech'
         }
         
-        for category, label in categories.items():
-            url = f'https://www.theguardian.com/{category}'
-            response = self.safe_request(url)
+        for kategori, etiket in kategoriler.items():
+            url = f'https://www.theguardian.com/{kategori}'
+            response = self.güvenli_istek(url)
             if response:
                 soup = BeautifulSoup(response.text, 'html.parser')
-                articles = soup.find_all('div', class_='fc-item__container')
+                haberler = soup.find_all('div', class_='fc-item__container')
                 
-                for article in articles[:20]:
+                for haber in haberler[:20]:
                     try:
-                        title = article.find('span', class_='fc-item__title').text.strip()
-                        if title:
-                            self.collected_data.append({
-                                'text': title,
-                                'category': label,
-                                'source': 'guardian'
+                        başlık = haber.find('span', class_='fc-item__title').text.strip()
+                        if başlık:
+                            self.toplanan_veriler.append({
+                                'text': başlık,
+                                'kategori': etiket,
+                                'kaynak': 'guardian'
                             })
                     except:
                         continue
                     
                 time.sleep(random.uniform(1, 3))
 
-    def collect_cnn(self):
+    def cnn_haberleri_topla(self):
         """
-        جمع الأخبار من موقع CNN
+        CNN haberleri toplamak
         """
-        categories = {
+        kategoriler = {
             'business': 'business',
             'entertainment': 'entertainment',
             'politics': 'politics',
@@ -137,73 +137,73 @@ class NewsCollector:
             'tech': 'tech'
         }
         
-        for category, label in categories.items():
-            url = f'https://www.cnn.com/{category}'
-            response = self.safe_request(url)
+        for kategori, etiket in kategoriler.items():
+            url = f'https://www.cnn.com/{kategori}'
+            response = self.güvenli_istek(url)
             if response:
                 soup = BeautifulSoup(response.text, 'html.parser')
-                articles = soup.find_all('article')
+                haberler = soup.find_all('article')
                 
-                for article in articles[:20]:
+                for haber in haberler[:20]:
                     try:
-                        title = article.find('span', class_='cd__headline-text').text.strip()
-                        if title:
-                            self.collected_data.append({
-                                'text': title,
-                                'category': label,
-                                'source': 'cnn'
+                        başlık = haber.find('span', class_='cd__headline-text').text.strip()
+                        if başlık:
+                            self.toplanan_veriler.append({
+                                'text': başlık,
+                                'kategori': etiket,
+                                'kaynak': 'cnn'
                             })
                     except:
                         continue
                     
                 time.sleep(random.uniform(1, 3))
 
-    def save_data(self):
+    def verileri_kaydet(self):
         """
-        حفظ البيانات المجمعة
+        Toplanan verileri kaydet
         """
-        if self.collected_data:
-            df = pd.DataFrame(self.collected_data)
+        if self.toplanan_veriler:
+            df = pd.DataFrame(self.toplanan_veriler)
             
-            # إضافة البيانات الجديدة إلى الملف الموجود إذا كان موجوداً
-            output_file = 'enhanced_news_dataset.csv'
-            if os.path.exists(output_file):
-                existing_df = pd.read_csv(output_file)
-                df = pd.concat([existing_df, df], ignore_index=True)
+            # Mevcut dosyaya yeni verileri ekle
+            çıktı_dosyası = 'gelişmiş_haber_verileri.csv'
+            if os.path.exists(çıktı_dosyası):
+                mevcut_df = pd.read_csv(çıktı_dosyası)
+                df = pd.concat([mevcut_df, df], ignore_index=True)
             
-            # حفظ البيانات
-            df.to_csv(output_file, index=False)
-            print(f"تم حفظ {len(df)} مقال في {output_file}")
+            # Verileri kaydet
+            df.to_csv(çıktı_dosyası, index=False)
+            print(f"{len(df)} haber kaydedildi: {çıktı_dosyası}")
         else:
-            print("لم يتم جمع أي بيانات")
+            print("Hiçbir veri toplanmadı")
 
-    def collect_all(self):
+    def tüm_verileri_topla(self):
         """
-        جمع البيانات من جميع المصادر
+        Tüm kaynaklardan verileri toplamak
         """
-        print("بدء جمع البيانات...")
+        print("Veri toplama işlemi başladı...")
         
-        # جمع البيانات من كل مصدر
-        collectors = [self.collect_reuters, self.collect_guardian, self.collect_cnn]
-        for collector in collectors:
+        # Tüm kaynaklardan verileri toplamak
+        toplayıcılar = [self.reuters_haberleri_topla, self.guardian_haberleri_topla, self.cnn_haberleri_topla]
+        for toplayıcı in toplayıcılar:
             try:
-                print(f"جمع البيانات من {collector.__name__}...")
-                collector()
-                print(f"تم جمع {len([d for d in self.collected_data if d['source'] == collector.__name__.split('_')[1]])} مقال من {collector.__name__}")
+                print(f"{toplayıcı.__name__} kaynaklarından veriler toplanıyor...")
+                toplayıcı()
+                print(f"{toplayıcı.__name__} kaynaklarından {len([d for d in self.toplanan_veriler if d['kaynak'] == toplayıcı.__name__.split('_')[1]])} haber toplanmıştır")
             except Exception as e:
-                print(f"خطأ في {collector.__name__}: {str(e)}")
+                print(f"{toplayıcı.__name__} hatası: {str(e)}")
                 import traceback
                 print(traceback.format_exc())
         
-        # طباعة إحصائيات
-        print("\nإحصائيات البيانات المجمعة:")
-        sources = pd.DataFrame(self.collected_data)['source'].value_counts()
-        for source, count in sources.items():
-            print(f"{source}: {count} مقال")
+        # İstatistikleri yazdır
+        print("\nToplanan verilerin istatistikleri:")
+        kaynaklar = pd.DataFrame(self.toplanan_veriler)['kaynak'].value_counts()
+        for kaynak, sayı in kaynaklar.items():
+            print(f"{kaynak}: {sayı} haber")
         
-        # حفظ البيانات
-        self.save_data()
+        # Verileri kaydet
+        self.verileri_kaydet()
 
 if __name__ == "__main__":
-    collector = NewsCollector()
-    collector.collect_all()
+    toplayıcı = HaberToplayıcı()
+    toplayıcı.tüm_verileri_topla()

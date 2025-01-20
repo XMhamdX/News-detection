@@ -1,69 +1,121 @@
+"""
+NewsAPI'den haber toplama
+Bu modül, NewsAPI'yi kullanarak haberleri toplar ve kategorilere göre sınıflandırır
+"""
+
 from newsapi import NewsApiClient
 import pandas as pd
 from datetime import datetime, timedelta
+import logging
+import os
+from pathlib import Path
 import time
 
-class NewsAPICollector:
-    def __init__(self, api_key):
-        self.api = NewsApiClient(api_key=api_key)
-        self.collected_data = []
-        
-    def collect_news(self, category):
-        """جمع الأخبار لفئة معينة"""
-        try:
-            # الحصول على أخبار اليوم
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=30)  # آخر 30 يوم
-            
-            response = self.api.get_everything(
-                q=category,
-                language='en',
-                from_param=start_date.strftime('%Y-%m-%d'),
-                to=end_date.strftime('%Y-%m-%d'),
-                sort_by='relevancy'
-            )
-            
-            if response['status'] == 'ok':
-                articles = response['articles']
-                for article in articles:
-                    self.collected_data.append({
-                        'text': f"{article['title']}. {article['description']}",
-                        'category': category,
-                        'source': article['source']['name']
-                    })
-                
-                print(f"تم جمع {len(articles)} مقال من فئة {category}")
-                time.sleep(1)  # انتظار لتجنب تجاوز حد الطلبات
-            
-        except Exception as e:
-            print(f"خطأ في جمع أخبار {category}: {str(e)}")
-    
-    def collect_all(self):
-        """جمع الأخبار من جميع الفئات"""
-        categories = ['business', 'entertainment', 'politics', 'sports', 'technology']
-        
-        print("بدء جمع البيانات من NewsAPI...")
-        for category in categories:
-            self.collect_news(category)
-        
-        # حفظ البيانات
-        if self.collected_data:
-            df = pd.DataFrame(self.collected_data)
-            output_file = 'newsapi_dataset.csv'
-            df.to_csv(output_file, index=False)
-            print(f"\nتم حفظ {len(df)} مقال في {output_file}")
-            
-            # طباعة إحصائيات
-            print("\nإحصائيات البيانات المجمعة:")
-            print("\nعدد المقالات حسب الفئة:")
-            print(df['category'].value_counts())
-            print("\nعدد المقالات حسب المصدر:")
-            print(df['source'].value_counts().head())
-        else:
-            print("لم يتم جمع أي بيانات")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-if __name__ == "__main__":
-    # مفتاح API من NewsAPI
-    API_KEY = '8835b0cbaeff45d3abbb74337686b12e'  
-    collector = NewsAPICollector(API_KEY)
-    collector.collect_all()
+class NewsAPICollector:
+    def __init__(self, api_key=None):
+        """
+        NewsAPI toplayıcısını başlat
+        
+        Args:
+            api_key (str): NewsAPI API anahtarı
+        """
+        self.api_key = api_key or os.environ.get('NEWS_API_KEY')
+        if not self.api_key:
+            raise ValueError("NEWS_API_KEY gerekli")
+        
+        self.api = NewsApiClient(api_key=self.api_key)
+        self.categories = {
+            'business': ['business', 'economy', 'finance'],
+            'technology': ['technology', 'tech', 'innovation'],
+            'entertainment': ['entertainment', 'arts', 'culture'],
+            'sport': ['sports', 'football', 'basketball'],
+            'politics': ['politics', 'government', 'policy']
+        }
+    
+    def collect_articles(self, days_back=7):
+        """
+        Belirtilen gün sayısı kadar geriye giderek haberleri topla
+        
+        Args:
+            days_back (int): Kaç gün geriye gidileceği
+        """
+        collected_data = []
+        from_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+        
+        for category, keywords in self.categories.items():
+            logger.info(f"{category} kategorisinden haberler toplanıyor...")
+            
+            for keyword in keywords:
+                try:
+                    response = self.api.get_everything(
+                        q=keyword,
+                        from_param=from_date,
+                        language='en',
+                        sort_by='relevancy',
+                        page_size=100
+                    )
+                    
+                    if response['status'] == 'ok':
+                        for article in response['articles']:
+                            if article['description'] and article['title']:
+                                text = f"{article['title']}. {article['description']}"
+                                collected_data.append({
+                                    'text': text,
+                                    'category': category,
+                                    'source': article['source']['name'],
+                                    'date': article['publishedAt']
+                                })
+                    
+                    time.sleep(1)  # API sınırlamalarını aşmamak için bekle
+                
+                except Exception as e:
+                    logger.error(f"{keyword} için hata: {str(e)}")
+                    continue
+        
+        return pd.DataFrame(collected_data)
+    
+    def save_articles(self, df, output_dir='data/raw'):
+        """
+        Toplanan haberleri kaydet
+        
+        Args:
+            df (DataFrame): Kaydedilecek haberler
+            output_dir (str): Çıktı dizini
+        """
+        if df.empty:
+            logger.warning("Kaydedilecek haber yok")
+            return
+        
+        # Çıktı dizinini oluştur
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Dosya adını oluştur
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        output_file = output_dir / f'newsapi_articles_{timestamp}.csv'
+        
+        # Verileri kaydet
+        df.to_csv(output_file, index=False)
+        logger.info(f"{len(df)} haber kaydedildi: {output_file}")
+        
+        # Kategori dağılımını göster
+        logger.info("\nKategori dağılımı:")
+        logger.info(df['category'].value_counts())
+
+def main():
+    """
+    Ana çalıştırma fonksiyonu
+    """
+    try:
+        collector = NewsAPICollector()
+        articles_df = collector.collect_articles()
+        collector.save_articles(articles_df)
+    
+    except Exception as e:
+        logger.error(f"Hata: {str(e)}")
+
+if __name__ == '__main__':
+    main()
